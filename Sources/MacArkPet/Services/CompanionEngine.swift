@@ -80,8 +80,8 @@ final class CompanionEngine {
         let isWorking = isProductiveApp(category: model.currentAppCategory)
         let isHangingOut = model.nearScreenEdge // 是否挂在屏幕边缘
 
-        // 无条件每分钟产出一个金币
-        model.coins += 1
+        // 无条件每分钟产出 10 个金币
+        model.coins += 10
 
         // 1. 精力流失/恢复逻辑
         if isWorking && isHangingOut {

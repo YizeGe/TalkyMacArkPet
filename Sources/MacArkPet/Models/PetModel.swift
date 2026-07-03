@@ -158,6 +158,9 @@ final class PetModel: ObservableObject {
         // 🐾 Affection up!
         let bonus = checkDailyBonus()
         affection = min(100, affection + 2 + bonus)
+        
+        // 🐾 每点一次加 1 个金币
+        coins += 1
 
         speak(kind: "interact")
     }
