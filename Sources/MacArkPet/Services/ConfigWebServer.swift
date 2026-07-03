@@ -943,13 +943,9 @@ final class ConfigWebServer {
             case "special": ctrl.model.specialAction(); success = true
             case "rest": ctrl.model.rest(); success = true
             case "sleep": ctrl.model.sleep(); success = true
-            case "feed": ctrl.model.feed(); success = true
-            case "buy_food":
-                if ctrl.model.coins >= 30 {
-                    ctrl.model.coins -= 30
-                    ctrl.model.feed()
-                    success = true
-                } else {
+            case "feed", "buy_food":
+                success = ctrl.model.feed()
+                if !success {
                     sendJSON(connection, body: #"{"success": false, "error": "金币不足"}"#)
                     return
                 }

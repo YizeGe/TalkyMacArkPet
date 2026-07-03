@@ -198,7 +198,13 @@ final class PetModel: ObservableObject {
         speak(kind: "special")
     }
 
-    func feed() {
+    @discardableResult
+    func feed() -> Bool {
+        guard coins >= 30 else {
+            speak(text: "博士，金币不足呢 (需要30金币)")
+            return false
+        }
+        coins -= 30
         stamina = min(100, stamina + 30)
         moodLevel = min(100, moodLevel + 20)
         affection = min(100, affection + 1)
@@ -210,6 +216,7 @@ final class PetModel: ObservableObject {
         velocity = CGVector(dx: 0, dy: 0)
         nextMoodChange = Date().addingTimeInterval(4)
         speak(kind: "feed")
+        return true
     }
 
     var statusText: String {
