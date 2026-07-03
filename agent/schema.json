@@ -1,0 +1,68 @@
+{
+  "_meta": {
+    "version": "1.0",
+    "description": "MacArkPet 角色数据标准模板",
+    "fields": {
+      "name":          {"required": true,  "type": "string",  "label": "角色名",     "source": "wiki_代号"},
+      "subtitle":      {"required": true,  "type": "string",  "label": "头衔",       "source": "wiki_头衔"},
+      "race":          {"required": true,  "type": "string",  "label": "种族",       "source": "wiki_种族"},
+      "origin":        {"required": true,  "type": "string",  "label": "出身地",     "source": "wiki_出身地"},
+      "classLabel":    {"required": true,  "type": "string",  "label": "职业",       "source": "wiki_职业"},
+      "faction":       {"required": true,  "type": "string",  "label": "阵营/势力", "source": "wiki_阵营"},
+      "personality":   {"required": true,  "type": "text",    "label": "性格描述",   "minLen": 30},
+      "speechStyle":   {"required": true,  "type": "text",    "label": "语言风格",   "minLen": 10},
+      "attitudeTowardsDoctor": {"required": true, "type": "text", "label": "对博士态度", "minLen": 10},
+      "backgroundSummary":     {"required": true, "type": "text", "label": "背景故事",   "minLen": 50},
+      "signatureLines": {"required": false, "type": "string_array", "label": "经典台词"},
+      "birthday":      {"required": false, "type": "string",  "label": "生日"},
+      "height":        {"required": false, "type": "string",  "label": "身高"},
+      "infected":      {"required": true,  "type": "boolean", "label": "是否感染者"}
+    },
+    "screenSituations": {
+      "coding":        {"label": "编码",     "hint": "看到博士在写代码/开发时的反应"},
+      "watching_video": {"label": "看视频",   "hint": "看到博士在看视频时的反应"},
+      "gaming":        {"label": "游戏",     "hint": "看到博士在玩游戏时的反应"},
+      "social":        {"label": "社交",     "hint": "看到博士在社交平台时的反应"},
+      "chatting":      {"label": "聊天",     "hint": "看到博士在聊天时的反应"},
+      "working":       {"label": "工作",     "hint": "看到博士在处理文档/办公时的反应"},
+      "reading_news":  {"label": "读新闻",   "hint": "看到博士在看新闻时的反应"},
+      "shopping":      {"label": "购物",     "hint": "看到博士在购物时的反应"},
+      "ai_chat":       {"label": "AI聊天",  "hint": "看到博士在和 AI 对话时的反应"},
+      "studying":      {"label": "学习",     "hint": "看到博士在学习时的反应"},
+      "deep_night":    {"label": "深夜",     "hint": "深夜时段（0-5点）的台词"},
+      "idle_long":     {"label": "长时间闲置", "hint": "博士长时间没有操作电脑时的台词"}
+    },
+    "dialogueSituations": {
+      "interact":          {"label": "日常互动",      "count": 3},
+      "rest":              {"label": "休息时",        "count": 2},
+      "sleep":             {"label": "睡眠",          "count": 2},
+      "special":           {"label": "特殊动作",      "count": 2},
+      "feed":              {"label": "喂食",          "count": 2},
+      "welcome":           {"label": "欢迎",          "count": 1},
+      "farewell":          {"label": "告别",          "count": 1},
+      "greeting":          {"label": "问候",          "count": 1},
+      "affection_interact": {"label": "亲密·互动",    "count": 2, "minAffection": 40},
+      "affection_rest":     {"label": "亲密·休息",    "count": 2, "minAffection": 40},
+      "affection_sleep":    {"label": "亲密·睡眠",    "count": 1, "minAffection": 40},
+      "affection_special":  {"label": "亲密·特殊",    "count": 2, "minAffection": 40}
+    }
+  },
+  "characterProfile": {
+    "name": "",
+    "subtitle": "",
+    "race": "",
+    "origin": "",
+    "classLabel": "",
+    "faction": "",
+    "personality": "",
+    "speechStyle": "",
+    "attitudeTowardsDoctor": "",
+    "backgroundSummary": "",
+    "signatureLines": [],
+    "screenAttitude": {},
+    "birthday": "",
+    "height": "",
+    "infected": false
+  },
+  "dialogues": {}
+}

@@ -1,0 +1,174 @@
+# ============================================================
+# MacArkPet 屏幕触发配置
+# ============================================================
+# 用户可自由编辑此文件。修改后无需重启，下次触发时自动生效。
+# 每个条目指定 app bundle ID 或窗口标题关键词，映射到对应的情境。
+# 
+# 格式说明：
+#   [website_categories.情境名]
+#   keyword = ["app_bundle_id1", "app_bundle_id2", ...]
+#   keyword = ["标题关键词1", "标题关键词2", ...]
+#
+# 情境名会直接映射到角色台词表中的情境 key。
+# 可用情境：coding, watching_video, social, chatting, reading_news,
+#           shopping, gaming, working, email, designing, writing,
+#           ai_chat, devops, studying, browsing, deep_night, idle_long
+
+# ==================== 编码/开发 ====================
+[website_categories.coding]
+# 代码托管
+github = ["com.github.GitHub", "io.github.GitHub", "GitHub"]
+gitlab = ["com.gitlab.GitLab", "GitLab"]
+# 问答/学习
+stackoverflow = ["Stack Overflow", "stackoverflow"]
+leetcode = ["LeetCode", "力扣"]
+codesandbox = ["CodeSandbox", "codesandbox"]
+# 技术文章/社区
+segmentfault = ["思否", "segmentfault"]
+juejin = ["掘金", "juejin"]
+csdn = ["CSDN", "csdn"]
+v2ex = ["V2EX", "v2ex"]
+# 包管理/文档
+npm = ["npm", "npmjs"]
+pypi = ["pypi", "Python Package"]
+docker = ["Docker", "docker"]
+
+# ==================== IDE/编辑器 ====================
+[website_categories.developing]
+xcode = ["com.apple.dt.Xcode", "Xcode"]
+vscode = ["com.microsoft.VSCode", "Visual Studio Code", "vscode", "VS Code"]
+cursor = ["com.todesktop.230113", "Cursor"]
+windsurf = ["Windsurf", "codeium"]
+jetbrains = ["com.jetbrains", "IntelliJ", "PyCharm", "WebStorm", "GoLand"]
+sublime = ["com.sublimetext", "Sublime Text"]
+vim = ["org.vim.MacVim", "vim", "neovim", "nvim"]
+terminal = ["com.apple.Terminal", "iTerm2", "Warp", "io.github.iterm2"]
+
+# ==================== 看视频 ====================
+[website_categories.watching_video]
+bilibili = ["bilibili", "B站", "b23.tv"]
+youtube = ["YouTube", "youtube", "youtu.be"]
+netflix = ["Netflix", "netflix"]
+twitch = ["Twitch", "twitch"]
+douyin = ["抖音", "douyin"]
+iqiyi = ["爱奇艺", "iqiyi"]
+tencent_video = ["腾讯视频", "v.qq.com"]
+youku = ["优酷", "youku"]
+mgtv = ["芒果TV", "mgtv"]
+
+# ==================== 社交 ====================
+[website_categories.social]
+wechat = ["com.tencent.xinWeChat", "微信", "WeChat"]
+dingtalk = ["com.alibaba.DingTalk", "钉钉", "DingTalk"]
+lark = ["com.larksuite.Lark", "飞书", "Feishu", "lark"]
+discord = ["com.hnc.Discord", "discord.com", "Discord"]
+telegram = ["org.telegram", "Telegram", "telegram"]
+slack = ["com.tinyspeck.slackmac", "Slack"]
+twitter = ["com.twitter.X", "Twitter", "X.com", "x.com"]
+weibo = ["微博", "weibo.com"]
+xiaohongshu = ["小红书", "xiaohongshu"]
+bilibili_social = ["bilibili", "B站"]
+zhihu = ["知乎", "zhihu.com"]
+
+# ==================== 聊天 ====================
+[website_categories.chatting]
+whatsapp = ["WhatsApp", "whatsapp"]
+signal = ["org.whispersystems.signal", "Signal"]
+qq = ["com.tencent.qq", "QQ", "qq.com"]
+messenger = ["com.facebook.Messenger", "Messenger"]
+messages = ["com.apple.iChat", "Messages"]
+
+# ==================== 读新闻 ====================
+[website_categories.reading_news]
+hackernews = ["Hacker News", "news.ycombinator.com", "ycombinator"]
+reddit = ["Reddit", "reddit.com"]
+36kr = ["36氪", "36kr"]
+thepaper = ["澎湃新闻", "thepaper.cn"]
+ithome = ["ithome", "IT之家"]
+solidot = ["solidot", "Solidot"]
+huxiu = ["虎嗅", "huxiu.com"]
+
+# ==================== 购物 ====================
+[website_categories.shopping]
+taobao = ["淘宝", "taobao.com"]
+tmall = ["天猫", "tmall.com"]
+jd = ["京东", "jd.com"]
+pinduoduo = ["拼多多", "pinduoduo"]
+amazon = ["Amazon", "amazon.com"]
+xianyu = ["闲鱼", "闲鱼"]
+eleme = ["饿了么", "ele.me"]
+meituan = ["美团", "meituan"]
+
+# ==================== 游戏 ====================
+[website_categories.gaming]
+steam = ["com.valve.steam", "steam", "store.steampowered"]
+epic = ["com.epicgames.EpicGamesLauncher", "Epic Games"]
+battlenet = ["net.battle.Battle.net", "Battle.net", "暴雪"]
+riot = ["com.riotgames.LeagueofLegends", "Riot", "League of Legends"]
+minecraft = ["net.minecraft", "Minecraft"]
+arknights = ["arknights", "明日方舟"]
+genshin = ["Genshin Impact", "原神", "yuanshen"]
+hsr = ["Honkai: Star Rail", "星穹铁道", "崩坏：星穹铁道"]
+zzz = ["Zenless Zone Zero", "绝区零"]
+wuthering = ["Wuthering Waves", "鸣潮"]
+
+# ==================== 办公/生产力 ====================
+[website_categories.working]
+notion = ["notion", "Notion"]
+obsidian = ["md.obsidian", "Obsidian"]
+wps = ["com.kingsoft.wps", "WPS"]
+google_docs = ["Google Docs", "docs.google"]
+google_sheets = ["Google Sheets", "sheets.google"]
+google_slides = ["Google Slides", "slides.google"]
+figma = ["Figma", "figma.com"]
+bear = ["net.shinyfrog.bear", "Bear"]
+office = ["com.microsoft.Word", "com.microsoft.Excel", "com.microsoft.PowerPoint"]
+
+# ==================== 写东西 ====================
+[website_categories.writing]
+medium = ["Medium", "medium.com"]
+zhuanlan = ["专栏", "zhuanlan.zhihu"]
+yuque = ["语雀", "yuque"]
+xiaoyuzhou = ["小宇宙", "xiaoyuzhou"]
+typora = ["abnerworks.Typora", "Typora"]
+ulysses = ["com.ulyssesapp", "Ulysses"]
+
+# ==================== AI/大模型聊天 ====================
+[website_categories.ai_chat]
+chatgpt = ["chat.openai.com", "ChatGPT", "OpenAI"]
+claude = ["claude.ai", "Claude", "Anthropic"]
+deepseek = ["chat.deepseek.com", "deepseek", "DeepSeek"]
+kimi = ["kimi.moonshot.cn", "Kimi", "kimi"]
+tongyi = ["tongyi.aliyun.com", "通义千问", "通义"]
+doubao = ["doubao.com", "豆包", "doubao"]
+gemini = ["gemini.google.com", "Gemini", "bard"]
+perplexity = ["perplexity.ai", "Perplexity"]
+poe = ["poe.com", "Poe"]
+
+# ==================== 学习/研究 ====================
+[website_categories.studying]
+coursera = ["Coursera", "coursera"]
+udemy = ["Udemy", "udemy"]
+khan = ["Khan Academy", "khanacademy"]
+wikipedia = ["Wikipedia", "wikipedia.org", "维基百科"]
+arxiv = ["arxiv", "arXiv"]
+scholar = ["Google Scholar", "scholar.google"]
+zhihu_study = ["知乎"]
+bilibili_study = ["bilibili"]
+
+# ==================== 邮箱 ====================
+[website_categories.email]
+gmail = ["mail.google.com", "Gmail", "Google Mail"]
+outlook = ["com.microsoft.Outlook", "Outlook", "outlook.live"]
+mail_app = ["com.apple.mail", "Mail"]
+netease_mail = ["mail.163.com", "mail.126.com", "网易邮箱"]
+qqmail = ["mail.qq.com", "QQ邮箱"]
+
+# ==================== 浏览/摸鱼 ====================
+[website_categories.browsing]
+safari = ["com.apple.Safari", "Safari"]
+chrome = ["com.google.Chrome", "Google Chrome", "Chrome"]
+firefox = ["org.mozilla.firefox", "Firefox", "firefox"]
+edge = ["com.microsoft.Edge", "Microsoft Edge", "Edge"]
+opera = ["com.operasoftware.Opera", "Opera"]
+arc = ["company.thebrowser.Browser", "Arc", "Arc Browser"]

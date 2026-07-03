@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MacArkPet 配置管理</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-background">
+    <div class="glow-orb orb-1"></div>
+    <div class="glow-orb orb-2"></div>
+    <div class="glow-orb orb-3"></div>
+  </div>
+  
+  <header>
+    <div class="header-left">
+      <h1>🐾 MacArkPet</h1>
+      <span class="subtitle">配置管理面板</span>
+    </div>
+    <div class="header-right">
+      <span class="status-dot" id="statusDot"></span>
+      <span id="serverStatus">检查中...</span>
+      <button class="btn btn-sm" onclick="refreshAll()">🔄 刷新</button>
+    </div>
+  </header>
+
+  <div class="tabs">
+    <button class="tab" data-tab="triggers">🎯 触发规则</button>
+    <button class="tab" data-tab="data">📋 角色管理</button>
+    <button class="tab" data-tab="monitor">👁️ 实时监控</button>
+    <button class="tab" data-tab="pets">🖥️ 桌宠管理</button>
+    <button class="tab" data-tab="help">📖 帮助</button>
+  </div>
+
+  <!-- ─── 触发规则页 ─── -->
+  <div class="tab-content active" id="tab-triggers">
+    <div class="toolbar">
+      <div class="toolbar-left">
+        <span class="badge" id="siteCount">0 个网站</span>
+        <span class="badge" id="categoryCount">0 个分类</span>
+        <span class="badge badge-warning hidden" id="dirtyBadge">⚠️ 未保存</span>
+      </div>
+      <div class="toolbar-right">
+        <button class="btn btn-primary" onclick="saveConfig()">💾 保存</button>
+        <button class="btn btn-secondary" onclick="resetConfig()">↺ 重置</button>
+      </div>
+    </div>
+
+    <div class="trigger-filter-bar">
+      <input type="text" id="triggerSearch" placeholder="搜索分类或关键词…" oninput="onTriggerSearch()" class="filter-input">
+    </div>
+
+    <div id="categoriesList" class="category-list"></div>
+
+    <div class="add-category-card">
+      <input type="text" id="newCategoryName" placeholder="新分类名(如: studying)" list="situation-list">
+      <datalist id="situation-list">
+        <option value="coding">
+        <option value="developing">
+        <option value="watching_video">
+        <option value="social">
+        <option value="chatting">
+        <option value="reading_news">
+        <option value="shopping">
+        <option value="gaming">
+        <option value="working">
+        <option value="email">
+        <option value="designing">
+        <option value="writing">
+        <option value="ai_chat">
+        <option value="studying">
+        <option value="browsing">
+        <option value="deep_night">
+        <option value="idle_long">
+      </datalist>
+      <button class="btn btn-primary" onclick="addCategory()">+ 添加分类</button>
+    </div>
+
+    <!-- 批量操作工具栏 -->
+    <div class="batch-toolbar">
+      <span class="batch-label">⚡ 批量操作</span>
+      <select id="batchClearCat" class="batch-select" onchange="onBatchClearCatChange()">
+        <option value="">— 清空分类 —</option>
+      </select>
+      <button class="btn btn-sm btn-danger" onclick="batchClearCategory()">🗑️ 清空</button>
+      <span class="batch-sep"></span>
+      <select id="batchCopyFrom" class="batch-select">
+        <option value="">源分类</option>
+      </select>
+      <span style="color:var(--text2);font-size:12px;">→</span>
+      <select id="batchCopyTo" class="batch-select">
+        <option value="">目标分类</option>
+      </select>
+      <button class="btn btn-sm" onclick="batchCopyCategory()">📋 复制</button>
+      <span class="batch-sep"></span>
+      <button class="btn btn-sm" onclick="exportConfig()">⬇️ 导出 TOML</button>
+      <label class="btn btn-sm" style="cursor:pointer;">📂 导入 TOML
+        <input type="file" id="importTomlInput" accept=".toml,.txt" style="display:none" onchange="importConfig(event)">
+      </label>
+    </div>
+  </div>
+
+  <!-- ─── 实时监控页 ─── -->
+  <div class="tab-content" id="tab-monitor">
+    
+    <!-- 实时状态仪表盘 -->
+    <div class="monitor-dashboard" id="currentContext">
+      <div class="dashboard-main">
+        <div class="app-display">
+          <div class="app-icon-area" id="monAppIcon">💻</div>
+          <div class="app-info">
+            <div class="app-name" id="monApp">—</div>
+            <div class="app-title" id="monTitle">等待检测...</div>
+          </div>
+        </div>
+        <div class="status-grid">
+          <div class="status-item">
+            <span class="status-label">情境</span>
+            <span class="status-badge" id="monCategory">—</span>
+          </div>
+          <div class="status-item">
+            <span class="status-label">时段</span>
+            <span class="status-badge phase-badge" id="monPhase">—</span>
+          </div>
+          <div class="status-item">
+            <span class="status-label">夜深</span>
+            <span class="status-badge" id="monDeepNight">—</span>
+          </div>
+          <div class="status-item">
+            <span class="status-label">长时间闲置</span>
+            <span class="status-badge" id="monIdle">—</span>
+          </div>
+        </div>
+        <div class="context-summary" id="monSummary"></div>
+      </div>
+    </div>
+
+    <!-- 活动热力图 -->
+    <div class="monitor-card">
+      <div class="monitor-header">📊 活动时间线 <span class="text-muted" style="font-weight:400;font-size:11px;">最近30分钟</span></div>
+      <div class="monitor-body">
+        <div id="activityTimeline" class="activity-timeline">
+          <div class="timeline-empty">等待数据...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 触发记录 -->
+    <div class="monitor-card">
+      <div class="monitor-header">
+        <span>📋 触发记录</span>
+        <div class="monitor-header-right">
+          <select id="historyFilter" class="history-filter" onchange="filterHistory()">
+            <option value="">全部情境</option>
+          </select>
+          <button class="btn btn-sm" onclick="clearHistory()">清空</button>
+        </div>
+      </div>
+      <div class="monitor-body">
+        <div id="historyLog" class="history-log">
+          <p class="placeholder">等待触发事件...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 手动测试面板 -->
+    <div class="monitor-card">
+      <div class="monitor-header">🧪 手动测试</div>
+      <div class="monitor-body">
+        <div class="test-panel">
+          <div class="test-row">
+            <span class="test-label">情境</span>
+            <select id="testSituation" class="test-select">
+              <option value="coding">编码</option>
+              <option value="developing">开发</option>
+              <option value="watching_video">看视频</option>
+              <option value="gaming">游戏</option>
+              <option value="social">社交</option>
+              <option value="chatting">聊天</option>
+              <option value="working">工作</option>
+              <option value="browsing">浏览</option>
+              <option value="reading_news">读新闻</option>
+              <option value="ai_chat">AI聊天</option>
+              <option value="studying">学习</option>
+              <option value="deep_night">深夜</option>
+              <option value="idle_long">长时间闲置</option>
+            </select>
+          </div>
+          <div class="test-row">
+            <span class="test-label">角色</span>
+            <select id="testCharacter" class="test-select">
+              <option value="random">随机</option>
+            </select>
+          </div>
+          <button class="btn btn-primary" onclick="sendTestTrigger()">🚀 发送测试触发</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── 角色管理页 ─── -->
+  <!-- ─── 角色管理页 ─── -->
+  <div class="tab-content" id="tab-data">
+    <div class="tab-header">
+      <h2>📋 角色管理</h2>
+      <span class="badge" id="profileCount">0 个角色</span>
+    </div>
+
+    <!-- 🤖 智能体（可折叠） -->
+    <details class="agent-collapse" id="agentSection">
+      <summary>🤖 从 prts.wiki 自动生成角色数据</summary>
+      <div class="agent-area">
+        <div class="agent-input-row">
+          <input type="text" id="agentName" placeholder="输入角色名，如 水月、缪尔赛思、玛恩纳..."
+                 onkeydown="if(event.key==='Enter') runAgent()" />
+          <button onclick="runAgent()" id="agentRunBtn">🚀 生成</button>
+          <label class="toggle-label" title="启用 AI 润色（需配置 DeepSeek/OpenAI API Key）">
+            <input type="checkbox" id="agentAI" checked onchange="toggleAI()">
+            <span class="toggle-slider-sm"></span>
+            <span class="toggle-text">🤖 AI 润色</span>
+          </label>
+          <button class="btn btn-sm btn-secondary" onclick="showAIConfig()" title="配置 AI API">⚙️</button>
+        </div>
+        <div id="aiConfigBar" class="ai-config-bar" style="display:none">
+          <!-- AI 配置表单，动态渲染 -->
+        </div>
+        <div id="agentStatus" class="agent-status"></div>
+        <div id="agentResult" style="display:none">
+          <div class="agent-tabs">
+            <button class="agent-tab active" data-agent-tab="profile">角色设定</button>
+            <button class="agent-tab" data-agent-tab="dialogues">对话</button>
+            <button class="agent-tab" data-agent-tab="raw">原始数据</button>
+          </div>
+          <div class="agent-preview">
+            <div class="agent-tab-content active" id="agent-tab-profile">
+              <div id="agentProfileView" class="agent-editor"></div>
+            </div>
+            <div class="agent-tab-content" id="agent-tab-dialogues">
+              <pre id="agentDialoguesView" class="agent-editor"></pre>
+            </div>
+            <div class="agent-tab-content" id="agent-tab-raw">
+              <pre id="agentRawView" class="agent-editor"></pre>
+            </div>
+          </div>
+          <div class="agent-actions">
+            <button onclick="saveAgentProfile()" id="agentSaveBtn" disabled>💾 保存到角色库</button>
+            <button onclick="clearAgentResult()">🗑 清空</button>
+            <span id="agentSaveStatus"></span>
+          </div>
+        </div>
+      </div>
+    </details>
+
+    <!-- 角色列表 -->
+    <div class="profile-section">
+      <div class="search-bar">
+        <input type="text" id="profileSearch" placeholder="搜索角色..." oninput="filterProfiles()">
+      </div>
+      <div class="filter-bar">
+        <select id="filterFaction" onchange="filterProfiles()"><option value="">全部阵营</option></select>
+        <select id="filterClass" onchange="filterProfiles()"><option value="">全部职业</option></select>
+        <select id="filterRace" onchange="filterProfiles()"><option value="">全部种族</option></select>
+        <button class="btn btn-sm btn-secondary" onclick="showNewCharForm()">➕ 新建角色</button>
+        <button class="btn btn-sm" onclick="runAudit()">🔍 审查数据</button>
+      </div>
+      <div id="profilesList" class="profile-grid"></div>
+    </div>
+
+    <!-- 编辑面板 -->
+    <div id="charEditor" style="display:none;"></div>
+
+    <!-- 审查结果 -->
+    <div id="auditResults" style="display:none;"></div>
+  </div>
+
+  <!-- ─── 桌宠管理页 ─── -->
+  <div class="tab-content" id="tab-pets">
+    
+    <!-- 全局设置 -->
+    <div class="monitor-card">
+      <div class="monitor-header">⚙️ 全局设置</div>
+      <div class="monitor-body">
+        <div class="settings-list">
+          <div class="setting-row">
+            <span class="setting-label">🔊 语音</span>
+            <label class="toggle">
+              <input type="checkbox" id="setVoice" onchange="updateSettings()">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div class="setting-row">
+            <span class="setting-label">🖱️ 点击穿透</span>
+            <label class="toggle">
+              <input type="checkbox" id="setClickThrough" onchange="updateSettings()">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div class="setting-row">
+            <span class="setting-label">📌 置顶</span>
+            <label class="toggle">
+              <input type="checkbox" id="setOnTop" onchange="updateSettings()" checked>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 桌宠列表 -->
+    <!-- 启动桌宠 -->
+    <div class="monitor-card">
+      <div class="monitor-header">🚀 启动新桌宠</div>
+      <div class="monitor-body">
+        <div class="launch-row">
+          <select id="launchPetSelect" class="launch-select">
+            <option value="">— 选择已安装角色 —</option>
+          </select>
+          <button class="btn btn-primary" onclick="launchSelectedPet()" id="launchPetBtn">🚀 启动</button>
+          <button class="btn btn-sm btn-secondary" onclick="refreshAvailablePets()" title="刷新角色列表">🔄</button>
+          <span id="launchStatus" class="text-muted" style="margin-left:8px;font-size:12px"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 桌宠列表 -->
+    <div class="monitor-card">
+      <div class="monitor-header">🐾 正在运行的桌宠 
+        <span class="text-muted" id="petCountLabel">0 个</span>
+      </div>
+      <div class="monitor-body" id="petListContainer">
+        <p class="placeholder" id="petEmptyHint">暂无活跃桌宠<br><span style="font-size:11px;color:var(--text2)">在上方选择角色启动，或在原生启动器中启动</span></p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ─── 帮助页 ─── -->
+  <div class="tab-content" id="tab-help">
+    <div class="help-card">
+      <h2>📖 MacArkPet Web 管理面板 — 使用指南</h2>
+      <p style="color:var(--text2);font-size:13px">访问地址：<code>http://localhost:19191</code> · 随 MacArkPet 自动启动</p>
+    </div>
+
+    <div class="help-card">
+      <h3>🚀 快速上手</h3>
+      <ol class="help-list">
+        <li><strong>启动桌宠</strong> — 在原生启动器中选择角色并点击「Launch Full Character」</li>
+        <li><strong>配置触发规则</strong> (🎯 标签) — 设置哪些 App/网站触发什么情境</li>
+        <li><strong>管理角色</strong> (📋 标签) — 查看/编辑角色设定，或从 prts.wiki 自动生成</li>
+        <li><strong>实时监控</strong> (👁️ 标签) — 查看桌宠"看到"的屏幕内容和触发的台词</li>
+        <li><strong>远程控制</strong> (🖥️ 标签) — 给桌宠发送互动命令、调整设置</li>
+      </ol>
+    </div>
+
+    <div class="help-card">
+      <h3>🎯 触发规则管理</h3>
+      <p>每个规则是一个「情境分类 → 关键词列表」的映射。当桌宠检测到前台窗口标题或 Bundle ID
+      包含某个关键词时，会触发对应情境的角色台词。</p>
+      <h4>操作说明</h4>
+      <ul class="help-list">
+        <li><strong>添加关键词</strong> — 在分类底部的输入框中输入关键词，按 Enter</li>
+        <li><strong>删除关键词</strong> — 点击关键词标签右上角的 ×</li>
+        <li><strong>添加分类</strong> — 点击「+ 添加分类」，输入分类名称</li>
+        <li><strong>批量操作</strong> — 支持清空分类、跨分类复制、TOML 导入/导出</li>
+      </ul>
+      <p>配置文件位置：<code>~/Library/Application Support/MacArkPet/Config/ScreenTriggers.toml</code></p>
+    </div>
+
+    <div class="help-card">
+      <h3>📋 角色管理</h3>
+      <h4>角色列表</h4>
+      <ul class="help-list">
+        <li>按阵营/职业/种族筛选，或搜索角色名/ID</li>
+        <li>点击展开查看详细设定（性格、语言风格、背景故事、台词）</li>
+        <li>点击 <strong>✏️ 编辑角色设定</strong> 修改角色信息</li>
+        <li>点击 <strong>🎭 编辑台词</strong> 进入台词编辑器</li>
+        <li>点击 <strong>🗑 删除</strong> 彻底删除角色（含台词数据，不可撤销）</li>
+      </ul>
+      <h4>台词编辑器</h4>
+      <ul class="help-list">
+        <li>每个情境可有多组台词，每组支持好感度门槛和冷却时间</li>
+        <li><code>affection_*</code> 前缀的情境需要好感度 ≥ 60 才触发</li>
+        <li>从下拉菜单选择情境类型添加到角色</li>
+      </ul>
+      <h4>🤖 智能体生成</h4>
+      <ul class="help-list">
+        <li>输入角色名（中文），点击生成 → 自动从 prts.wiki 爬取数据</li>
+        <li>开启 <strong>AI 润色</strong> 开关后，会用 DeepSeek 对内容进行润色</li>
+        <li>生成结果可逐字段编辑，确认无误后保存到角色库</li>
+        <li>首次使用需在 ⚙️ 中配置 AI API Key</li>
+      </ul>
+    </div>
+
+    <div class="help-card">
+      <h3>👁️ 实时监控</h3>
+      <ul class="help-list">
+        <li>实时显示桌宠"眼中"的屏幕内容：前台 App、窗口标题、匹配的情境</li>
+        <li>时间线展示最近 30 次活动记录</li>
+        <li>触发历史持久化保存，可回溯过往匹配记录</li>
+        <li><strong>手动测试</strong> — 在下方下拉选择情境 → 选择角色 → 点击触发，模拟屏幕变化</li>
+      </ul>
+    </div>
+
+    <div class="help-card">
+      <h3>🖥️ 桌宠管理</h3>
+      <h4>全局设置</h4>
+      <ul class="help-list">
+        <li><strong>🔊 语音</strong> — 开启/关闭角色台词语音（TTS）</li>
+        <li><strong>🖱️ 点击穿透</strong> — 开启后鼠标事件穿透桌宠窗口，不影响桌面操作</li>
+        <li><strong>📌 置顶</strong> — 桌宠始终显示在所有窗口之上</li>
+      </ul>
+      <h4>远程控制命令</h4>
+      <ul class="help-list">
+        <li><strong>👆 互动 / 🍽️ 喂食</strong> — 提升好感度</li>
+        <li><strong>😴 休息 / 💤 睡觉</strong> — 恢复体力</li>
+        <li><strong>✨ 特殊</strong> — 触发角色的特殊动作</li>
+        <li><strong>📍 重置位置</strong> — 将桌宠移回默认位置</li>
+        <li><strong>✕ 关闭</strong> — 关闭该桌宠</li>
+      </ul>
+      <h4>启动新桌宠</h4>
+      <p>从下拉菜单选择已安装的角色模型，点击「🚀 启动」即可在 WebUI 中直接启动新桌宠。</p>
+    </div>
+
+    <div class="help-card">
+      <h3>🔧 常见问题</h3>
+      <details class="faq-item">
+        <summary>桌宠不动了怎么办？</summary>
+        <p>尝试在 🖥️ 标签中点击「📍 重置位置」。如果不行，关闭桌宠后重新启动。</p>
+      </details>
+      <details class="faq-item">
+        <summary>如何让桌宠说更多话？</summary>
+        <p>在 🎯 标签中为不同情境配置更多关键词。切换到不同的程序和页面，桌宠会根据情境变化自动触发台词。</p>
+      </details>
+      <details class="faq-item">
+        <summary>如何添加新角色？</summary>
+        <p>两种方式：① 在 📋 标签的智能体区域输入角色名，从 prts.wiki 自动生成；
+        ② 点击「➕ 新建角色」手动填写基本信息。</p>
+      </details>
+      <details class="faq-item">
+        <summary>AI 润色怎么配置？</summary>
+        <p>在 📋 标签的智能体区域点击 ⚙️ 按钮，填入你的 DeepSeek / OpenAI API Key 和模型名称，点击保存。</p>
+      </details>
+      <details class="faq-item">
+        <summary>角色台词怎么修改？</summary>
+        <p>在角色列表中展开角色详情，点击「🎭 编辑台词」，即可添加/删除/修改台词情境和内容。</p>
+      </details>
+      <details class="faq-item">
+        <summary>数据存在哪里？</summary>
+        <p>所有数据存储在本地：<br>
+        <code>~/Library/Application Support/MacArkPet/</code> — 用户配置文件<br>
+        <code>MacArkPet.app/Contents/Resources/</code> — 角色数据文件</p>
+      </details>
+    </div>
+
+    <div class="help-card">
+      <h3>📡 API 参考</h3>
+      <p>WebUI 使用以下 API 端点。所有端点在 <code>http://localhost:19191</code> 提供服务。</p>
+      <table class="help-api-table">
+        <tr><th>端点</th><th>方法</th><th>说明</th></tr>
+        <tr><td><code>/api/status</code></td><td>GET</td><td>服务器状态</td></tr>
+        <tr><td><code>/api/config</code></td><td>GET/PUT</td><td>触发规则配置</td></tr>
+        <tr><td><code>/api/config/export</code></td><td>GET</td><td>导出 TOML</td></tr>
+        <tr><td><code>/api/config/import</code></td><td>POST</td><td>导入 TOML</td></tr>
+        <tr><td><code>/api/profiles</code></td><td>GET</td><td>角色列表</td></tr>
+        <tr><td><code>/api/profiles/detail</code></td><td>GET</td><td>角色详情（含台词）</td></tr>
+        <tr><td><code>/api/profiles/save</code></td><td>POST</td><td>保存角色设定</td></tr>
+        <tr><td><code>/api/profiles/delete</code></td><td>POST</td><td>删除角色</td></tr>
+        <tr><td><code>/api/profiles/create</code></td><td>POST</td><td>新建角色</td></tr>
+        <tr><td><code>/api/profiles/save-dialogues</code></td><td>POST</td><td>保存台词</td></tr>
+        <tr><td><code>/api/agent/generate</code></td><td>POST</td><td>智能体生成角色</td></tr>
+        <tr><td><code>/api/agent/save</code></td><td>POST</td><td>保存智能体结果</td></tr>
+        <tr><td><code>/api/context</code></td><td>GET</td><td>当前屏幕上下文</td></tr>
+        <tr><td><code>/api/context/stream</code></td><td>GET</td><td>SSE 实时推送</td></tr>
+        <tr><td><code>/api/history</code></td><td>GET/POST</td><td>触发历史</td></tr>
+        <tr><td><code>/api/pets</code></td><td>GET</td><td>桌宠列表</td></tr>
+        <tr><td><code>/api/pets/command</code></td><td>POST</td><td>桌宠命令</td></tr>
+        <tr><td><code>/api/pets/launch</code></td><td>POST</td><td>启动桌宠</td></tr>
+        <tr><td><code>/api/pets/available</code></td><td>GET</td><td>可启动角色</td></tr>
+        <tr><td><code>/api/settings</code></td><td>GET/PUT</td><td>全局设置</td></tr>
+        <tr><td><code>/api/ai-config</code></td><td>GET/PUT</td><td>AI 配置</td></tr>
+        <tr><td><code>/api/audit</code></td><td>GET</td><td>角色数据审查</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <!-- 角色编辑模态框 -->
+  <div id="profileEditModal" class="modal-overlay" style="display:none">
+    <div class="modal-content">
+      <div class="modal-header">
+        <span id="editModalTitle">编辑角色设定</span>
+        <button class="modal-close" onclick="closeProfileEdit()">✕</button>
+      </div>
+      <div class="modal-body" id="editModalBody">
+        <div class="edit-loading">加载中...</div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeProfileEdit()">取消</button>
+        <button class="btn btn-primary" id="saveProfileBtn" onclick="saveProfileEdit()">💾 保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 台词编辑模态框 -->
+  <div id="dialogueEditModal" class="modal-overlay" style="display:none">
+    <div class="modal-content modal-wide">
+      <div class="modal-header">
+        <span id="dialogModalTitle">🎭 台词编辑</span>
+        <button class="modal-close" onclick="closeDialogueEdit()">✕</button>
+      </div>
+      <div class="modal-body" id="dialogEditorBody">
+        <div class="edit-loading">加载中...</div>
+      </div>
+      <div class="modal-footer">
+        <span id="dialogStats" class="text-muted" style="flex:1"></span>
+        <button class="btn btn-secondary" onclick="closeDialogueEdit()">取消</button>
+        <button class="btn btn-primary" onclick="saveDialogues()">💾 保存台词</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js?v=2.2"></script>
+</body>
+</html>

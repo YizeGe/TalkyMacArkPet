@@ -1,0 +1,396 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (C) 2026 MacArkPet contributors
+
+import AppKit
+
+struct PetPhysics {
+    var gravity: CGFloat = 1_500
+    var floorInset: CGFloat = 0
+    var windowSurfaceInset: CGFloat = 4
+    var horizontalSpeed: CGFloat = 42
+    private var preciseOrigin: CGPoint?
+    private var currentSupport: Surface?
+    private var stationaryLockMood: PetModel.Mood?
+    private var stationaryLockX: CGFloat?
+
+    private struct Surface {
+        enum Kind: Int {
+            case floor = 0
+            case top = 1
+            case bottomEdge = 2
+        }
+
+        let windowNumber: Int
+        let kind: Kind
+        let topY: CGFloat
+        let left: CGFloat
+        let right: CGFloat
+        let rect: CGRect
+
+        var isFloor: Bool {
+            kind == .floor
+        }
+    }
+
+    mutating func resetOrigin(_ origin: CGPoint, clearSupport: Bool = true) {
+        preciseOrigin = origin
+        if stationaryLockMood != nil {
+            stationaryLockX = origin.x
+        }
+        if clearSupport {
+            currentSupport = nil
+        }
+    }
+
+    mutating func step(model: PetModel, window: NSWindow, now: Date) {
+        let isLeftButtonDown = (NSEvent.pressedMouseButtons & 1) != 0
+        let isActivelyDragging = model.isDragging && isLeftButtonDown && now.timeIntervalSince(model.lastDragEventAt) < 0.45
+        if model.isDragging && !isActivelyDragging {
+            model.isDragging = false
+            model.velocity.dy = 0
+            // 🐛 拖拽结束后同步物理状态，防止回到旧位置
+            preciseOrigin = window.frame.origin
+            if stationaryLockMood != nil {
+                stationaryLockX = window.frame.origin.x
+            }
+        }
+
+        let dt = min(max(now.timeIntervalSince(model.lastTick), 0), 1.0 / 20.0)
+        model.lastTick = now
+        model.animationPhase += CGFloat(dt)
+
+        guard !isActivelyDragging, let screen = window.screen ?? NSScreen.main else {
+            preciseOrigin = window.frame.origin
+            currentSupport = nil
+            return
+        }
+
+        var frame = window.frame
+        frame.origin = preciseOrigin ?? frame.origin
+        let bounds = screen.visibleFrame
+        let edgeInset: CGFloat = 2
+        let contactInset = model.contactInset(forWindowSize: frame.size)
+        var previousContactY = frame.minY + contactInset
+        let isStationaryMood = model.mood == .sleepy
+            || model.mood == .resting
+            || model.mood == .special
+            || model.mood == .happy
+            || model.mood == .attacking
+            || model.mood == .victory
+        let shouldLockHorizontal = isStationaryMood || now < model.resumeWalkingAt || model.stayMode != nil
+        if shouldLockHorizontal {
+            if stationaryLockMood != model.mood {
+                stationaryLockMood = model.mood
+                stationaryLockX = frame.origin.x
+            }
+            frame.origin.x = stationaryLockX ?? frame.origin.x
+            model.velocity.dx = 0
+        } else {
+            stationaryLockMood = nil
+            stationaryLockX = nil
+        }
+
+        if abs(model.velocity.dy) < 1, let support = currentSupport {
+            if let updatedSupport = updatedSurface(
+                matching: support,
+                frame: frame,
+                contactInset: contactInset,
+                screen: screen,
+                petWindowNumber: window.windowNumber
+            ) {
+                let supportDeltaX = updatedSupport.left - support.left
+                let supportDeltaY = updatedSupport.topY - support.topY
+                var shiftedFrame = frame
+                shiftedFrame.origin.x += supportDeltaX
+                shiftedFrame.origin.y += supportDeltaY
+                if shouldLockHorizontal, let lockedX = stationaryLockX {
+                    stationaryLockX = lockedX + supportDeltaX
+                }
+                if abs(supportDeltaX) < 96,
+                   abs(supportDeltaY) < 96,
+                   supportsFeet(of: shiftedFrame, contactInset: contactInset, on: updatedSupport, screen: screen) {
+                    frame = shiftedFrame
+                    previousContactY = frame.minY + contactInset
+                    currentSupport = updatedSupport
+                } else {
+                    currentSupport = nil
+                }
+            } else {
+                currentSupport = nil
+            }
+        }
+
+        // 🎯 战斗目标寻路
+        if let targetFrame = model.targetWindowFrame {
+            NSLog("[⚔️Physics] 朝目标移动: 目标x=\(targetFrame.midX), 当前x=\(frame.midX)")
+            // 朝目标水平移动
+            let targetMidX = targetFrame.midX
+            let selfMidX = frame.midX
+            let dx = targetMidX - selfMidX
+            if abs(dx) > 20 {
+                model.velocity.dx = dx > 0 ? horizontalSpeed : -horizontalSpeed
+                model.facingLeft = dx < 0
+                NSLog("[⚔️Physics] 设置速度: dx=\(model.velocity.dx), facingLeft=\(model.facingLeft)")
+            } else {
+                // 已到达！速度为0，等战斗管理器切换状态
+                model.velocity.dx = 0
+            }
+        } else if shouldLockHorizontal {
+            model.velocity.dx = 0
+            frame.origin.x = stationaryLockX ?? frame.origin.x
+        } else if now >= model.resumeWalkingAt, abs(model.velocity.dx) < horizontalSpeed * 0.35 {
+            model.velocity.dx = model.facingLeft ? -horizontalSpeed : horizontalSpeed
+        }
+
+        if frame.minX <= bounds.minX + edgeInset {
+            frame.origin.x = bounds.minX + edgeInset
+            if shouldLockHorizontal {
+                stationaryLockX = frame.origin.x
+            }
+            model.velocity.dx = shouldLockHorizontal ? 0 : abs(horizontalSpeed)
+        } else if frame.maxX >= bounds.maxX - edgeInset {
+            frame.origin.x = bounds.maxX - frame.width - edgeInset
+            if shouldLockHorizontal {
+                stationaryLockX = frame.origin.x
+            }
+            model.velocity.dx = shouldLockHorizontal ? 0 : -abs(horizontalSpeed)
+        }
+
+        model.velocity.dy -= gravity * CGFloat(dt)
+        if shouldLockHorizontal {
+            frame.origin.x = stationaryLockX ?? frame.origin.x
+        } else {
+            frame.origin.x += model.velocity.dx * CGFloat(dt)
+        }
+        frame.origin.y += model.velocity.dy * CGFloat(dt)
+
+        let support = landingSurface(
+            for: frame,
+            contactInset: contactInset,
+            previousContactY: previousContactY,
+            screen: screen,
+            petWindowNumber: window.windowNumber
+        )
+        let contactY = frame.minY + contactInset
+        if model.velocity.dy <= 0, support.isFloor, contactY <= support.topY {
+            frame.origin.y = settledY(
+                currentY: frame.origin.y,
+                targetY: support.topY - contactInset,
+                wasSupported: currentSupport != nil,
+                dt: CGFloat(dt)
+            )
+            model.velocity.dy = 0
+            currentSupport = support
+        } else if model.velocity.dy <= 0, contactY <= support.topY, previousContactY >= support.topY - 34 {
+            frame.origin.y = settledY(
+                currentY: frame.origin.y,
+                targetY: support.topY - contactInset,
+                wasSupported: currentSupport != nil,
+                dt: CGFloat(dt)
+            )
+            model.velocity.dy = 0
+            currentSupport = support
+        } else if currentSupport?.isFloor == false, support.isFloor {
+            currentSupport = nil
+        } else if currentSupport?.isFloor == false, contactY < support.topY - 80 {
+            currentSupport = nil
+        }
+
+        if frame.minX <= bounds.minX + edgeInset {
+            frame.origin.x = bounds.minX + edgeInset
+            if shouldLockHorizontal {
+                stationaryLockX = frame.origin.x
+            }
+            model.velocity.dx = shouldLockHorizontal ? 0 : abs(horizontalSpeed)
+        } else if frame.maxX >= bounds.maxX - edgeInset {
+            frame.origin.x = bounds.maxX - frame.width - edgeInset
+            if shouldLockHorizontal {
+                stationaryLockX = frame.origin.x
+            }
+            model.velocity.dx = shouldLockHorizontal ? 0 : -abs(horizontalSpeed)
+        }
+
+        if abs(model.velocity.dx) > 1 {
+            model.facingLeft = model.velocity.dx < 0
+        }
+
+        if now >= model.nextMoodChange {
+            pickNextIdleAction(model: model, onWindowSurface: currentSupport?.isFloor == false)
+        }
+
+        preciseOrigin = frame.origin
+        window.setFrameOrigin(frame.origin)
+    }
+
+    private func settledY(currentY: CGFloat, targetY: CGFloat, wasSupported: Bool, dt: CGFloat) -> CGFloat {
+        let delta = targetY - currentY
+        guard wasSupported, abs(delta) > 0.5, abs(delta) < 90 else {
+            return targetY
+        }
+
+        let maxStep = max(4, 720 * dt)
+        return currentY + min(abs(delta), maxStep) * (delta < 0 ? -1 : 1)
+    }
+
+    private func pickNextIdleAction(model: PetModel, onWindowSurface: Bool) {
+        // 📍 停靠模式下不自动切换行为
+        if model.stayMode != nil { return }
+        if model.mood != .idle {
+            model.resumeWalkingAt = Date().addingTimeInterval(1.6)
+            model.velocity.dx = 0
+            model.nextMoodChange = Date().addingTimeInterval(TimeInterval.random(in: 8...14))
+            model.mood = .idle
+            return
+        }
+
+        let roll = Int.random(in: 0..<100)
+        if roll < 6 {
+            model.mood = .sleepy
+            model.velocity = CGVector(dx: 0, dy: 0)
+            model.nextMoodChange = Date().addingTimeInterval(TimeInterval.random(in: 7...14))
+            return
+        }
+        let sitThreshold = onWindowSurface ? 42 : 16
+        if roll < sitThreshold {
+            model.mood = .resting
+            model.velocity = CGVector(dx: 0, dy: 0)
+            model.nextMoodChange = Date().addingTimeInterval(TimeInterval.random(in: onWindowSurface ? 7...14 : 4...8))
+            return
+        }
+        if roll < sitThreshold + 6 {
+            model.mood = .special
+            model.velocity = CGVector(dx: 0, dy: 0)
+            model.nextMoodChange = Date().addingTimeInterval(TimeInterval.random(in: 16...24))
+            return
+        }
+
+        model.mood = .idle
+        if roll > 68 {
+            model.velocity.dx *= -1
+            model.facingLeft.toggle()
+        }
+        if abs(model.velocity.dx) < horizontalSpeed * 0.35 {
+            model.velocity.dx = model.facingLeft ? -horizontalSpeed : horizontalSpeed
+        }
+        model.nextMoodChange = Date().addingTimeInterval(TimeInterval.random(in: 8...16))
+    }
+
+    private func landingSurface(
+        for frame: NSRect,
+        contactInset: CGFloat,
+        previousContactY: CGFloat,
+        screen: NSScreen,
+        petWindowNumber: Int
+    ) -> Surface {
+        let floor = floorSurface(screen: screen)
+        let footMinX = frame.minX + frame.width * 0.18
+        let footMaxX = frame.maxX - frame.width * 0.18
+        let contactY = frame.minY + contactInset
+        var best = floor
+
+        for surface in windowSurfaces(screen: screen, petWindowNumber: petWindowNumber) {
+            guard footMaxX > surface.left + 12, footMinX < surface.right - 12 else { continue }
+            guard surface.topY > best.topY,
+                  surface.topY + frame.height - contactInset <= screen.visibleFrame.maxY + 24,
+                  surface.topY <= previousContactY + 28,
+                  surface.topY >= contactY - 74 else {
+                continue
+            }
+            best = surface
+        }
+
+        return best
+    }
+
+    private func updatedSurface(
+        matching support: Surface,
+        frame: NSRect,
+        contactInset: CGFloat,
+        screen: NSScreen,
+        petWindowNumber: Int
+    ) -> Surface? {
+        if support.isFloor {
+            return floorSurface(screen: screen)
+        }
+
+        return windowSurfaces(screen: screen, petWindowNumber: petWindowNumber)
+            .first { surface in
+                surface.windowNumber == support.windowNumber
+                    && surface.kind == support.kind
+                    && supportsFeet(of: frame, contactInset: contactInset, on: surface, screen: screen)
+            }
+    }
+
+    private func floorSurface(screen: NSScreen) -> Surface {
+        let visible = screen.visibleFrame
+        return Surface(
+            windowNumber: 0,
+            kind: .floor,
+            topY: visible.minY + floorInset,
+            left: visible.minX,
+            right: visible.maxX,
+            rect: visible
+        )
+    }
+
+    private func windowSurfaces(screen: NSScreen, petWindowNumber: Int) -> [Surface] {
+        guard let windows = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID) as? [[String: Any]] else {
+            return []
+        }
+
+        return windows.flatMap { info -> [Surface] in
+            let number = info[kCGWindowNumber as String] as? Int ?? 0
+            if number == petWindowNumber { return [] }
+
+            let alpha = info[kCGWindowAlpha as String] as? Double ?? 1
+            guard alpha > 0.05 else { return [] }
+
+            let layer = info[kCGWindowLayer as String] as? Int ?? 0
+            guard layer == 0 else { return [] }
+
+            guard let bounds = info[kCGWindowBounds as String] as? [String: Any],
+                  let x = bounds["X"] as? CGFloat,
+                  let y = bounds["Y"] as? CGFloat,
+                  let width = bounds["Width"] as? CGFloat,
+                  let height = bounds["Height"] as? CGFloat,
+                  width > 90, height > 40 else {
+                return []
+            }
+
+            let left = x
+            let right = x + width
+            let top = screen.frame.maxY - y
+            let bottom = top - height
+            let rect = CGRect(x: left, y: bottom, width: width, height: height)
+
+            guard rect.intersects(screen.frame),
+                  top >= screen.visibleFrame.minY + floorInset,
+                  top <= screen.visibleFrame.maxY - 24 else {
+                return []
+            }
+
+            var surfaces = [
+                Surface(windowNumber: number, kind: .top, topY: top - windowSurfaceInset, left: left, right: right, rect: rect)
+            ]
+
+            let ledgeY = max(bottom, screen.visibleFrame.minY + floorInset)
+            if ledgeY > screen.visibleFrame.minY + 56, ledgeY < screen.visibleFrame.maxY - 120 {
+                surfaces.append(Surface(windowNumber: number, kind: .bottomEdge, topY: ledgeY, left: left, right: right, rect: rect))
+            }
+
+            return surfaces
+        }
+    }
+
+    private func supportsFeet(of frame: NSRect, contactInset: CGFloat, on surface: Surface, screen: NSScreen) -> Bool {
+        if surface.isFloor { return true }
+
+        let footMinX = frame.minX + frame.width * 0.18
+        let footMaxX = frame.maxX - frame.width * 0.18
+        guard footMaxX > surface.left + 12, footMinX < surface.right - 12 else {
+            return false
+        }
+
+        return surface.topY + frame.height - contactInset <= screen.visibleFrame.maxY + 24
+    }
+}
