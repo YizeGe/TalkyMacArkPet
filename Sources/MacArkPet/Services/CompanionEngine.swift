@@ -80,12 +80,13 @@ final class CompanionEngine {
         let isWorking = isProductiveApp(category: model.currentAppCategory)
         let isHangingOut = model.nearScreenEdge // 是否挂在屏幕边缘
 
+        // 无条件每分钟产出一个金币
+        model.coins += 1
+
         // 1. 精力流失/恢复逻辑
         if isWorking && isHangingOut {
             // 工作且陪伴状态下，精力不减反增（或者保持）
             model.stamina = min(100.0, model.stamina + 0.5)
-            // 产出金币
-            model.coins += 1
         } else if model.mood == .resting {
             model.stamina = min(100.0, model.stamina + 1.0)
         } else if model.mood == .sleepy {
