@@ -152,8 +152,8 @@ final class CompanionEngine {
         // 遍历所有角色，寻找匹配的 CP 台词
         for model in activePets {
             for other in activePets where other !== model {
-                // 检查是否在 1 分钟 CD 内
-                if let last = model.lastCPTrigger[other.characterId], now.timeIntervalSince(last) < 60 {
+                // 检查是否在 5 分钟 CD 内
+                if let last = model.lastCPTrigger[other.characterId], now.timeIntervalSince(last) < 300 {
                     continue
                 }
 
