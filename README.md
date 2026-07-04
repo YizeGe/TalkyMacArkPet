@@ -44,6 +44,19 @@ TalkyMacArkPet 是一款专为 macOS 设计的原生桌面宠物应用。它是 
 2. 下载最新的 `MacArkPet-xxx-macOS.dmg` 文件
 3. 双击打开 dmg 文件，将 `MacArkPet` 拖入 `Applications` (应用程序) 文件夹即可双击运行。
 
+> [!WARNING]
+> **遇到“App 已损坏，打不开”或“无法验证开发者”怎么办？**
+> 
+> 由于本项目是开源免费项目，未向苹果缴纳每年 99$ 的开发者证书保护费，所以首次打开时会被 macOS 的安全机制 (Gatekeeper) 拦截。
+> 
+> **解决方法（任选其一）：**
+> - **方法一（最简单）**：打开启动台 (Launchpad) 或 `应用程序` 文件夹，找到 MacArkPet，**按住键盘上的 `Control` 键不放**，同时用鼠标点击图标，在弹出的菜单中选择“打开”，然后再点击一次“打开”即可。
+> - **方法二（终端彻底放行）**：打开“终端 (Terminal)” App，复制并粘贴以下命令后回车：
+>   ```bash
+>   xattr -cr /Applications/MacArkPet.app
+>   ```
+>   *(注意：运行命令前请确保你已经把 App 拖进了“应用程序”文件夹)*
+
 ---
 
 **🛠 对于开发者 (Build from Source)**
