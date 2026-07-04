@@ -62,9 +62,9 @@ struct DialogueEntry: Codable {
     /// 台词列表
     let lines: [String]
     /// 好感度门槛（0 = 通用）
-    let minAffection: Int
+    let minAffection: Int?
     /// 触发后冷却时间（秒）
-    let cooldown: Int
+    let cooldown: Int?
 }
 
 // MARK: - 角色台词语料库
@@ -194,7 +194,7 @@ final class DialogueEngine {
         guard !candidates.isEmpty else { return nil }
 
         // 按好感度门槛过滤
-        let eligible = candidates.filter { $0.minAffection <= affection }
+        let eligible = candidates.filter { ($0.minAffection ?? 0) <= affection }
 
         // 检查冷却
         let now = Date()
@@ -221,7 +221,7 @@ final class DialogueEngine {
 
         // 更新冷却
         if cooldowns[characterID] == nil { cooldowns[characterID] = [:] }
-        cooldowns[characterID]?[situationKey] = now.addingTimeInterval(TimeInterval(chosen.cooldown))
+        cooldowns[characterID]?[situationKey] = now.addingTimeInterval(TimeInterval(chosen.cooldown ?? 60))
 
         // 记录已说过的台词
         if recentJokes[characterID] == nil { recentJokes[characterID] = [:] }
@@ -249,7 +249,7 @@ final class DialogueEngine {
             NSLog("[DialogueEngine.line] ❌ No entries for moodKind=\(moodKind)")
             return nil
         }
-        let eligible = entries.filter { $0.minAffection <= affection }
+        let eligible = entries.filter { ($0.minAffection ?? 0) <= affection }
         let pool = eligible.isEmpty ? entries : eligible
         guard let chosen = pool.randomElement(),
               let line = chosen.lines.randomElement() else {
