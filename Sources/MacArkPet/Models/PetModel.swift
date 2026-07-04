@@ -422,6 +422,7 @@ final class PetModel: ObservableObject {
         }
         lastScreenContext = context
         lastScreenContextChange = now
+        currentAppCategory = context.category
 
         let situation = DialogueEngine.situation(from: context)
         lastDialogueSituation = situation.rawValue

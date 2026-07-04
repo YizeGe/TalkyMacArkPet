@@ -1199,7 +1199,7 @@ function renderDialogueEditor() {
   
   // 情境选择器（添加新情境）
   var available = extendedOptions.filter(function(s) { return situationNames.indexOf(s) < 0; });
-  var availableCp = cpOptions.filter(function(o) { return situationNames.indexOf(o.sit) < 0; });
+  var availableCp = cpOptions; // 允许重复添加同一角色（用于不同时机）
 
   html += '<div class="dialog-add-sit-bar" style="display:flex; gap:10px; flex-wrap:wrap;">'
        + '<div style="display:flex; gap:4px;"><select id="newSitSelect">';
@@ -1224,7 +1224,14 @@ function renderDialogueEditor() {
     });
     html += '</datalist>';
   }
-  html += '<button class="btn btn-sm" onclick="addCPSituation()">➕ 添加彩蛋互动</button></div>'
+  var timingOptionsHTML = '<select id="newCPTimingSelect" class="dg-min-aff" style="width:140px; margin-left:4px;">'
+      + '<option value="">无特定时机 (随时)</option>'
+      + extendedOptions.map(function(s) {
+          return '<option value="' + s + '">' + (extendedLabels[s] || s) + '</option>';
+        }).join('')
+      + '</select>';
+  html += timingOptionsHTML;
+  html += '<button class="btn btn-sm" style="margin-left:4px;" onclick="addCPSituation()">➕ 添加彩蛋互动</button></div>'
        + '</div>'
        + '<div class="dialog-help" style="margin-bottom:10px;font-size:12px;color:#6b7280;">💡 互动小贴士：如果你想让桌宠与其他干员串门聊天，可以在上方“添加彩蛋互动”选择角色！之后会解锁专属的多回合剧本编辑器，你可以自由安排“我方”和“对方”的台词。</div>';
   
@@ -1232,6 +1239,19 @@ function renderDialogueEditor() {
   situationNames.forEach(function(sit) {
     var entries = _dialogData[sit] || [];
     var label = extendedLabels[sit] || SITUATION_LABELS[sit] || sit;
+    if (sit.startsWith('cp_')) {
+      var parts = sit.split('_');
+      var cpId = parts[parts.length - 1];
+      var cpName = cpId;
+      for (var i = 0; i < profilesData.length; i++) {
+        if (profilesData[i].id === cpId) { cpName = profilesData[i].name; break; }
+      }
+      label = '遇见：' + cpName;
+      if (parts.length > 2) {
+        var timing = parts.slice(1, parts.length - 1).join('_');
+        label += ' (' + (extendedLabels[timing] || SITUATION_LABELS[timing] || timing) + ')';
+      }
+    }
     html += '<div class="dg-edit-section">';
     html += '<div class="dg-edit-header">'
          + '<span class="dg-edit-sit-label">' + label + '</span>'
@@ -1328,11 +1348,13 @@ function addCPSituation() {
   }
   if (!p) { showToast('未找到干员: ' + val, 'error'); return; }
   
-  var sit = 'cp_' + p.id;
-  if (_dialogData[sit]) { showToast('该互动角色已添加', 'error'); return; }
+  var timing = document.getElementById('newCPTimingSelect').value;
+  var sit = 'cp_' + (timing ? timing + '_' : '') + p.id;
+  if (_dialogData[sit]) { showToast('该互动角色/场景已存在', 'error'); return; }
   _dialogData[sit] = [];
   renderDialogueEditor();
-  showToast('✅ 已添加: 遇见：' + p.name);
+  var timingLabel = timing ? (' (' + (SITUATION_LABELS[timing] || timing) + ')') : '';
+  showToast('✅ 已添加: 遇见：' + p.name + timingLabel);
 }
 
 function parseCPLine(lineStr) {

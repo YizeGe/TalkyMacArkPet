@@ -157,12 +157,16 @@ final class CompanionEngine {
                     continue
                 }
 
-                // 尝试多种 CP situation key：cp_{characterId} 和 cp_{displayName}
-                // 用户在 Web 编辑器中可能用显示名（如 cp_海沫）或内部ID（如 cp_4066_highmo）
-                let cpKeys = Array(Set([
-                    "cp_\(other.characterId)",
-                    "cp_\(other.displayName)"
-                ]))
+                // 尝试多种 CP situation key，优先尝试带当前场景的组合
+                // 例如 cp_watching_video_海沫
+                var cpKeys: [String] = []
+                let currentCategory = model.currentAppCategory
+                if !currentCategory.isEmpty && currentCategory != "browsing" {
+                    cpKeys.append("cp_\(currentCategory)_\(other.characterId)")
+                    cpKeys.append("cp_\(currentCategory)_\(other.displayName)")
+                }
+                cpKeys.append("cp_\(other.characterId)")
+                cpKeys.append("cp_\(other.displayName)")
 
                 var foundScript: String? = nil
                 for cpSituation in cpKeys {

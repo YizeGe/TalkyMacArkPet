@@ -29,6 +29,9 @@ find "$DIST_DIR" -maxdepth 1 -name "$APP_NAME *.app" -prune -exec rm -rf {} +
 cp "$BUILD_BINARY" "$APP_BINARY"
 chmod +x "$APP_BINARY"
 cp -R "$ROOT_DIR/Resources/." "$APP_RESOURCES/"
+if [ -d "$ROOT_DIR/agent" ]; then
+  cp -R "$ROOT_DIR/agent" "$APP_RESOURCES/"
+fi
 
 cat >"$INFO_PLIST" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>

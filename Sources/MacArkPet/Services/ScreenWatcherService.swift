@@ -111,10 +111,19 @@ final class ScreenWatcherService {
         guard !isActive else { return }
         isActive = true
 
+        checkAccessibilityPermissions()
         loadConfig()
         copyConfigIfNeeded()
         installInputMonitor()
         startPolling()
+    }
+
+    private func checkAccessibilityPermissions() {
+        let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
+        let isTrusted = AXIsProcessTrustedWithOptions(options)
+        if !isTrusted {
+            NSLog("[ScreenWatcherService] ⚠️ 尚未授予辅助功能权限，无法获取窗口标题。已触发系统授权弹窗。")
+        }
     }
 
     func stop() {
@@ -216,14 +225,14 @@ final class ScreenWatcherService {
 
         let axApp = AXUIElementCreateApplication(app.processIdentifier)
         var focusedWindow: CFTypeRef?
-        let result = AXUIElementCopyAttributeValue(axApp, "kAXFocusedWindowAttribute" as CFString, &focusedWindow)
+        let result = AXUIElementCopyAttributeValue(axApp, kAXFocusedWindowAttribute as CFString, &focusedWindow)
 
         guard result == .success, let axWindow = focusedWindow as! AXUIElement? else {
             return ""
         }
 
         var title: CFTypeRef?
-        let titleResult = AXUIElementCopyAttributeValue(axWindow, "kAXTitleAttribute" as CFString, &title)
+        let titleResult = AXUIElementCopyAttributeValue(axWindow, kAXTitleAttribute as CFString, &title)
 
         guard titleResult == .success, let titleStr = title as? String, !titleStr.isEmpty else {
             return ""
@@ -239,21 +248,21 @@ final class ScreenWatcherService {
         let lowerBundle = bundleID.lowercased()
         let lowerTitle = windowTitle.lowercased()
 
-        // 1. Bundle ID 精确匹配
-        if let category = bundleMap[lowerBundle] {
-            return category
-        }
-
-        // 2. Bundle ID 部分匹配
-        for (key, category) in bundleMap {
-            if lowerBundle.contains(key) || key.contains(lowerBundle) {
+        // 1. 窗口标题或 App 名称关键词匹配 (优先，以便识别浏览器内的具体网站)
+        for (keyword, category) in keywordMap {
+            if lowerTitle.contains(keyword) || lowerApp.contains(keyword) {
                 return category
             }
         }
 
-        // 3. 窗口标题关键词匹配
-        for (keyword, category) in keywordMap {
-            if lowerTitle.contains(keyword) || lowerApp.contains(keyword) {
+        // 2. Bundle ID 精确匹配
+        if let category = bundleMap[lowerBundle] {
+            return category
+        }
+
+        // 3. Bundle ID 部分匹配
+        for (key, category) in bundleMap {
+            if lowerBundle.contains(key) || key.contains(lowerBundle) {
                 return category
             }
         }

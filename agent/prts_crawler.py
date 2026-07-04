@@ -159,6 +159,13 @@ def crawl_character(name: str) -> dict:
             cn_div = vdiv.find("div", {"data-kind-name": "中文"})
             if not cn_div:
                 continue
+            
+            # 🐛 修复语言截断问题：移除 PRTS Wiki 可能含有的外语注音 <rt>, <rp> 以及外语 <span>
+            for tag in cn_div.find_all(["rt", "rp"]):
+                tag.decompose()
+            for span in cn_div.find_all("span", class_=lambda c: c and "exlang" in c):
+                span.decompose()
+
             cn = cn_div.get_text(strip=True)
             if cn and len(cn) > 1:
                 result["voice_lines"].append({"situation": sit, "text": cn})

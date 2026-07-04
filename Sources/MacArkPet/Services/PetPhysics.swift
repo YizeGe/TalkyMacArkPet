@@ -43,8 +43,7 @@ struct PetPhysics {
     }
 
     mutating func step(model: PetModel, window: NSWindow, now: Date) {
-        let isLeftButtonDown = (NSEvent.pressedMouseButtons & 1) != 0
-        let isActivelyDragging = model.isDragging && isLeftButtonDown && now.timeIntervalSince(model.lastDragEventAt) < 0.45
+        let isActivelyDragging = model.isDragging && now.timeIntervalSince(model.lastDragEventAt) < 0.45
         if model.isDragging && !isActivelyDragging {
             model.isDragging = false
             model.velocity.dy = 0
@@ -61,6 +60,9 @@ struct PetPhysics {
 
         guard !isActivelyDragging, let screen = window.screen ?? NSScreen.main else {
             preciseOrigin = window.frame.origin
+            if stationaryLockMood != nil {
+                stationaryLockX = window.frame.origin.x
+            }
             currentSupport = nil
             return
         }

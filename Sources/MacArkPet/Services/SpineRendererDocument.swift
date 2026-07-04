@@ -11,15 +11,27 @@ struct SpineRendererDocument {
         guard let atlasURL = model.atlasURL,
               let skeletonURL = model.skeletonURL,
               let imageURL = model.imageURL else {
-            throw CocoaError(.fileNoSuchFile)
+            throw NSError(domain: "MacArkPet", code: 2, userInfo: [NSLocalizedDescriptionKey: "Missing URLs: atlas=\(model.atlasURL?.path ?? "nil"), skel=\(model.skeletonURL?.path ?? "nil"), img=\(model.imageURL?.path ?? "nil")"])
         }
 
         let directory = try rendererDirectory()
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         try installRuntimeScript(into: directory)
 
-        let atlasText = try String(contentsOf: atlasURL, encoding: .utf8)
-        let skeletonData = try Data(contentsOf: skeletonURL)
+        let atlasText: String
+        do {
+            atlasText = try String(contentsOf: atlasURL, encoding: .utf8)
+        } catch {
+            throw NSError(domain: "MacArkPet", code: 4, userInfo: [NSLocalizedDescriptionKey: "Failed to read atlas text at \(atlasURL.path): \(error.localizedDescription)"])
+        }
+        
+        let skeletonData: Data
+        do {
+            skeletonData = try Data(contentsOf: skeletonURL)
+        } catch {
+            throw NSError(domain: "MacArkPet", code: 5, userInfo: [NSLocalizedDescriptionKey: "Failed to read skeleton data at \(skeletonURL.path): \(error.localizedDescription)"])
+        }
+        
         let imageSources = try imageDataURIs(atlasText: atlasText, atlasURL: atlasURL, fallbackImageURL: imageURL)
         let html = htmlDocument(
             title: model.displayName,
@@ -78,7 +90,7 @@ struct SpineRendererDocument {
             return candidate
         }
 
-        throw CocoaError(.fileNoSuchFile)
+        throw NSError(domain: "MacArkPet", code: 1, userInfo: [NSLocalizedDescriptionKey: "spine-webgl.js not found. Candidates: \(candidates.map { $0.path })"])
     }
 
     private static func imageDataURIs(atlasText: String, atlasURL: URL, fallbackImageURL: URL) throws -> [String: String] {
@@ -113,7 +125,12 @@ struct SpineRendererDocument {
     }
 
     private static func dataURI(for url: URL) throws -> String {
-        let data = try Data(contentsOf: url)
+        let data: Data
+        do {
+            data = try Data(contentsOf: url)
+        } catch {
+            throw NSError(domain: "MacArkPet", code: 3, userInfo: [NSLocalizedDescriptionKey: "Failed to read image at \(url.path): \(error.localizedDescription)"])
+        }
         let mimeType: String
         switch url.pathExtension.lowercased() {
         case "jpg", "jpeg":
