@@ -1465,37 +1465,37 @@ final class ConfigWebServer {
             return
         }
 
-        guard let resDir = resourceDir() else {
-            sendJSON(connection, body: #"{"success": false, "error": "Resource dir not found"}"#)
-            return
-        }
-
-        let profilesPath = resDir.appendingPathComponent("CharacterProfiles.json")
-        let dialoguesPath = resDir.appendingPathComponent("Dialogues.json")
         var results: [String: Any] = [:]
 
         // 保存 profile
-        if var existing = try? JSONSerialization.jsonObject(with: Data(contentsOf: profilesPath)) as? [String: Any] {
-            if let id = profile["id"] as? String {
-                existing[id] = profile
-                if let outData = try? JSONSerialization.data(withJSONObject: existing, options: [.prettyPrinted, .sortedKeys]) {
-                    try? outData.write(to: profilesPath)
-                    results["profile_saved"] = true
-                }
+        var existingProfiles: [String: Any] = [:]
+        if let pData = try? Data(contentsOf: profilesURLForRead),
+           let pJSON = try? JSONSerialization.jsonObject(with: pData) as? [String: Any] {
+            existingProfiles = pJSON
+        }
+        if let id = profile["id"] as? String {
+            existingProfiles[id] = profile
+            if let outData = try? JSONSerialization.data(withJSONObject: existingProfiles, options: [.prettyPrinted, .sortedKeys]) {
+                try? outData.write(to: profilesURL)
+                results["profile_saved"] = true
             }
         }
 
         // 保存 dialogues
-        if var existing = try? JSONSerialization.jsonObject(with: Data(contentsOf: dialoguesPath)) as? [String: Any] {
-            if let id = dialogues["char_id"] as? String {
-                existing[id] = dialogues["dialogues"]
-            } else if let pId = profile["id"] as? String {
-                existing[pId] = dialogues["dialogues"] ?? dialogues
-            }
-            if let outData = try? JSONSerialization.data(withJSONObject: existing, options: [.prettyPrinted, .sortedKeys]) {
-                try? outData.write(to: dialoguesPath)
-                results["dialogues_saved"] = true
-            }
+        var existingDialogues: [String: Any] = [:]
+        if let dData = try? Data(contentsOf: dialoguesURLForRead),
+           let dJSON = try? JSONSerialization.jsonObject(with: dData) as? [String: Any] {
+            existingDialogues = dJSON
+        }
+        if let id = dialogues["char_id"] as? String {
+            existingDialogues[id] = dialogues["dialogues"]
+        } else if let pId = profile["id"] as? String {
+            existingDialogues[pId] = dialogues["dialogues"] ?? dialogues
+        }
+        
+        if let outData = try? JSONSerialization.data(withJSONObject: existingDialogues, options: [.prettyPrinted, .sortedKeys]) {
+            try? outData.write(to: dialoguesURL)
+            results["dialogues_saved"] = true
         }
 
         // 重新加载 DialogueEngine 以确保桌面悬浮桌宠立即获得最新台词
