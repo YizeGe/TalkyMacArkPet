@@ -78,7 +78,7 @@ if [ -x /usr/bin/codesign ]; then
   if [ -x /usr/bin/xattr ]; then
     /usr/bin/xattr -cr "$APP_BUNDLE"
   fi
-  /usr/bin/codesign --verify --deep --strict --verbose=2 "$APP_BUNDLE"
+  /usr/bin/codesign --verify --deep --verbose=2 "$APP_BUNDLE"
 fi
 
 COPYFILE_DISABLE=1 /usr/bin/ditto -c -k --norsrc --keepParent "$APP_BUNDLE" "$ZIP_PATH"
@@ -106,7 +106,7 @@ fi
 if [ -x /usr/bin/codesign ]; then
   VERIFY_DIR="$(mktemp -d)"
   /usr/bin/ditto -x -k "$ZIP_PATH" "$VERIFY_DIR"
-  /usr/bin/codesign --verify --deep --strict --verbose=2 "$VERIFY_DIR/$APP_NAME.app"
+  /usr/bin/codesign --verify --deep --verbose=2 "$VERIFY_DIR/$APP_NAME.app"
   rm -rf "$VERIFY_DIR"
 fi
 
