@@ -37,13 +37,23 @@ TalkyMacArkPet 是一款专为 macOS 设计的原生桌面宠物应用。它是 
 - **PRTS Wiki**：感谢 PRTS 社区对《明日方舟》数据的悉心整理与维护，为本项目 AI 获取角色设定提供了重要的数据来源。
 - 所有相关 Spine WebGL 运行时及相关开源库的贡献者。
 
-## 🚀 运行与构建 / Build from Source
+## 🚀 安装与运行 / Installation
+
+**📦 对于普通用户（推荐）**
+最简单的方法是直接下载打包好的安装包，无需配置任何开发环境：
+1. 前往本仓库的 [Releases 页面](https://github.com/geyize/TalkyMacArkPet/releases) 
+2. 下载最新的 `MacArkPet-xxx-macOS.dmg` 文件
+3. 双击打开 dmg 文件，将 `MacArkPet` 拖入 `Applications` (应用程序) 文件夹即可双击运行。
+
+---
+
+**🛠 对于开发者 (Build from Source)**
 
 环境要求：
 - macOS 13 (Ventura) 及以上版本
 - Xcode Command Line Tools 或 Xcode (支持 Swift 5.9+)
 
-**1. 本地运行**
+**1. 源码编译与运行**
 ```bash
 git clone https://github.com/geyize/TalkyMacArkPet.git
 cd TalkyMacArkPet
