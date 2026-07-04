@@ -40,7 +40,6 @@ TalkyMacArkPet 是一款专为 macOS 设计的原生桌面宠物应用。它是 
 ## 🚀 安装与运行 / Installation
 
 **📦 对于普通用户（推荐）**
-直接下载打包好的安装包，无需配置任何开发环境：
 1. 前往本仓库的 [Releases 页面](https://github.com/YizeGe/TalkyMacArkPet/releases) 
 2. 下载最新的 `MacArkPet-xxx-macOS.dmg` 文件
 3. 双击打开 dmg 文件，将 `MacArkPet` 拖入 `Applications` (应用程序) 文件夹即可双击运行。
