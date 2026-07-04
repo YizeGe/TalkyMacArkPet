@@ -296,6 +296,22 @@ final class MacArkPetApp: NSObject, NSApplicationDelegate {
 
         submenu.addItem(.separator())
 
+        // 📍 CP 小剧场手动触发
+        if petControllers.count > 1 {
+            let cpTheaterMenu = NSMenu(title: "💭 触发互动小剧场")
+            let cpTheaterItem = NSMenuItem(title: "💭 触发互动小剧场...", action: nil, keyEquivalent: "")
+            cpTheaterItem.submenu = cpTheaterMenu
+            
+            for (index, otherCtrl) in petControllers.enumerated() {
+                if index == controllerIndex { continue }
+                let item = NSMenuItem(title: "与 \(otherCtrl.model.displayName)", action: #selector(triggerManualCPTheater(_:)), keyEquivalent: "")
+                item.representedObject = ManualCPPayload(initiatorIndex: controllerIndex, targetIndex: index)
+                cpTheaterMenu.addItem(item)
+            }
+            submenu.addItem(cpTheaterItem)
+            submenu.addItem(.separator())
+        }
+
         // 📍 停靠菜单
         let model = petControllers[controllerIndex].model
         if model.stayMode != nil {
@@ -362,11 +378,27 @@ final class MacArkPetApp: NSObject, NSApplicationDelegate {
         let mode: PetModel.StayMode
     }
 
+    private struct ManualCPPayload {
+        let initiatorIndex: Int
+        let targetIndex: Int
+    }
+
     @objc private func stayHerePet(_ sender: NSMenuItem) {
         guard let payload = sender.representedObject as? StayMenuPayload,
               let ctrl = pet(at: payload.controllerIndex) else { return }
         ctrl.model.stayHere(mode: payload.mode)
         refreshMenus()
+    }
+
+    @objc private func triggerManualCPTheater(_ sender: NSMenuItem) {
+        guard let payload = sender.representedObject as? ManualCPPayload,
+              petControllers.indices.contains(payload.initiatorIndex),
+              petControllers.indices.contains(payload.targetIndex) else { return }
+
+        let initiator = petControllers[payload.initiatorIndex].model
+        let target = petControllers[payload.targetIndex].model
+        
+        CompanionEngine.shared.triggerManualConversation(initiator: initiator, target: target)
     }
 
     @objc private func resumeWalkingPet(_ sender: NSMenuItem) {

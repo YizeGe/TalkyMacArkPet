@@ -145,13 +145,22 @@ final class CompanionEngine {
     // MARK: - CP System (多轮对话)
 
     @MainActor
+    func isCharacterInConversation(_ characterId: String) -> Bool {
+        return activeConversations.contains { $0.initiatorId == characterId || $0.otherId == characterId }
+    }
+
+    @MainActor
     private func processCPDetection(now: Date) {
         let activePets = MacArkPetApp.shared.petControllers.map { $0.model }
         if activePets.count < 2 { return }
 
         // 遍历所有角色，寻找匹配的 CP 台词
         for model in activePets {
+            if isCharacterInConversation(model.characterId) { continue }
+            
             for other in activePets where other !== model {
+                if isCharacterInConversation(other.characterId) { continue }
+                
                 // 检查是否在 5 分钟 CD 内
                 if let last = model.lastCPTrigger[other.characterId], now.timeIntervalSince(last) < 300 {
                     continue
@@ -182,6 +191,33 @@ final class CompanionEngine {
                     activeConversations.append(session)
                     return // 每次全局检测最多发起一段对话，避免刷屏
                 }
+            }
+        }
+    }
+
+    @MainActor
+    func triggerManualConversation(initiator: PetModel, target: PetModel) {
+        guard !isCharacterInConversation(initiator.characterId) && !isCharacterInConversation(target.characterId) else {
+            return
+        }
+
+        var cpKeys: [String] = []
+        let currentCategory = initiator.currentAppCategory
+        if !currentCategory.isEmpty && currentCategory != "browsing" {
+            cpKeys.append("cp_\(currentCategory)_\(target.characterId)")
+            cpKeys.append("cp_\(currentCategory)_\(target.displayName)")
+        }
+        cpKeys.append("cp_\(target.characterId)")
+        cpKeys.append("cp_\(target.displayName)")
+
+        for cpSituation in cpKeys {
+            // 无视普通 CD 寻找台词
+            if let script = DialogueEngine.shared.line(for: initiator.characterId, displayName: initiator.displayName, moodKind: cpSituation, affection: initiator.affection) {
+                let now = Date()
+                initiator.lastCPTrigger[target.characterId] = now
+                let session = ConversationSession(script: script, initiatorId: initiator.characterId, otherId: target.characterId, now: now)
+                activeConversations.append(session)
+                return
             }
         }
     }
