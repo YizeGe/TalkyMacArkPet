@@ -19,7 +19,7 @@ jobs:
       - name: Build and Package
         run: |
           chmod +x ./script/package_release.sh
-          ./script/package_release.sh
+          VERSION=${GITHUB_REF_NAME#v} ./script/package_release.sh
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
