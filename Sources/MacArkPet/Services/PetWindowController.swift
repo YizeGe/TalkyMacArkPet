@@ -299,13 +299,7 @@ final class PetWindowController {
             return false
         }
 
-        // 坐/躺/攻击等姿态变化时不做延迟缩小，直接跳转
         let currentKind = model.animationKind()
-        let nonStandingKinds: Set<String> = ["rest", "sleep", "special", "attacking", "interact"]
-        if nonStandingKinds.contains(currentKind) || nonStandingKinds.contains(lastAnimationKindForResize) {
-            lastAnimationKindForResize = currentKind
-            return false
-        }
         lastAnimationKindForResize = currentKind
 
         let widthIsShrinking = newSize.width < oldSize.width - 2
