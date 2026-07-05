@@ -413,7 +413,7 @@ struct SpineRendererDocument {
               context = new spine.webgl.ManagedWebGLRenderingContext(canvas, {
                 alpha: true,
                 antialias: true,
-                premultipliedAlpha: false
+                premultipliedAlpha: true
               });
               gl = context.gl;
               gl.clearColor(0, 0, 0, 0);
@@ -476,7 +476,7 @@ struct SpineRendererDocument {
               batcher = new spine.webgl.PolygonBatcher(context);
               mvp = new spine.webgl.Matrix4();
               skeletonRenderer = new spine.webgl.SkeletonRenderer(context);
-              skeletonRenderer.premultipliedAlpha = false;
+              skeletonRenderer.premultipliedAlpha = true;
 
               window.setPetAnimation("move");
               post({ type: "ready", animations: animationNames });
