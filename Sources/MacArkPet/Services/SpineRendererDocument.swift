@@ -158,7 +158,7 @@ struct SpineRendererDocument {
               width: 100%;
               height: 100%;
               overflow: hidden;
-              background: transparent;
+              background: rgba(15,15,15,0.03);
             }
             body { pointer-events: none; }
             canvas {
