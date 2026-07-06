@@ -41,6 +41,9 @@ enum DialogueSituation: String, CaseIterable, Codable {
     case low_battery
     case long_screen_time
 
+    // ---- 每日/首次 ----
+    case daily
+
     // ---- 带好感度前缀 ----
     var affectionVariants: [DialogueSituation] {
         switch self {

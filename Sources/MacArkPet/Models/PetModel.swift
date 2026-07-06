@@ -104,6 +104,7 @@ final class PetModel: ObservableObject {
     var lastCPTrigger: [String: Date] = [:]
     @Published var lastInteractionDate: Date?
     @Published var dailyStreak: Int = 0   // 连续登录天数
+    var lastDailyLineDate: Date?  // 每日台词最后触发日期（按天判断）
     private let statsStore = PetStatsStore()
 
     // 🗺️ Desktop awareness
@@ -553,6 +554,7 @@ final class PetModel: ObservableObject {
             coins: coins,
             dailyStreak: dailyStreak,
             lastInteractionDate: lastInteractionDate,
+            lastDailyLineDate: lastDailyLineDate,
             lastStateUpdate: Date()
         )
     }
@@ -567,6 +569,7 @@ final class PetModel: ObservableObject {
         coins = data.coins
         dailyStreak = data.dailyStreak
         lastInteractionDate = data.lastInteractionDate
+        lastDailyLineDate = data.lastDailyLineDate
 
         // 让 CompanionEngine 处理离线收益/消耗
         CompanionEngine.shared.processOfflineTime(model: self, lastUpdate: data.lastStateUpdate)
@@ -677,6 +680,9 @@ private struct PetStatsData: Codable {
     var lastInteractionDate: Date?
     var lastStateUpdate: Date = Date()
     
+    // 每日台词触发日期
+    var lastDailyLineDate: Date?
+    
     // 兼容旧存档
     var energy: Int?
     var lastEnergyDrain: Date?
@@ -710,7 +716,7 @@ private final class PetStatsStore {
     }
 
     func save(for characterId: String, affection: Int, stamina: Double, moodLevel: Double, coins: Int, dailyStreak: Int,
-              lastInteractionDate: Date?, lastStateUpdate: Date) {
+              lastInteractionDate: Date?, lastDailyLineDate: Date?, lastStateUpdate: Date) {
         var all: [String: PetStatsData] = [:]
         // Load existing file to merge
         if let data = try? Data(contentsOf: storageURL),
@@ -724,6 +730,7 @@ private final class PetStatsStore {
             coins: coins,
             dailyStreak: dailyStreak,
             lastInteractionDate: lastInteractionDate,
+            lastDailyLineDate: lastDailyLineDate,
             lastStateUpdate: lastStateUpdate
         )
         cache[characterId] = all[characterId]

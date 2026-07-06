@@ -485,7 +485,8 @@ function renderProfiles(profiles) {
     special: '特殊', affection_interact: '亲密·互动',
     affection_rest: '亲密·休息', affection_sleep: '亲密·睡眠',
     affection_special: '亲密·特殊', feed: '喂食',
-    welcome: '欢迎', farewell: '告别', greeting: '问候'
+    welcome: '欢迎', farewell: '告别', greeting: '问候',
+    daily: '每日问候'
   };
 
   for (var i = 0; i < profiles.length; i++) {
@@ -555,7 +556,8 @@ function previewDialogues(charId, situation, badgeEl) {
     special: '特殊', affection_interact: '亲密·互动',
     affection_rest: '亲密·休息', affection_sleep: '亲密·睡眠',
     affection_special: '亲密·特殊', feed: '喂食',
-    welcome: '欢迎', farewell: '告别', greeting: '问候'
+    welcome: '欢迎', farewell: '告别', greeting: '问候',
+    daily: '每日问候'
   };
   var html = '';
   for (var ei = 0; ei < entries.length; ei++) {
@@ -609,7 +611,8 @@ var SITUATION_META = {
   studying:       { label: '学习',       emoji: '📚', color: '#4f8cff' },
   browsing:       { label: '浏览',       emoji: '🌐', color: '#9294a0' },
   deep_night:     { label: '深夜',       emoji: '🌙', color: '#818cf8' },
-  idle_long:      { label: '长时间闲置', emoji: '💤', color: '#9294a0' }
+  idle_long:      { label: '长时间闲置', emoji: '💤', color: '#9294a0' },
+  daily:          { label: '每日问候',   emoji: '🌅', color: '#f97316' }
 };
 
 var PHASE_META = {
@@ -1160,7 +1163,8 @@ var SITUATION_OPTIONS = [
   'affection_interact', 'affection_rest', 'affection_sleep', 'affection_special',
   'watching_video', 'gaming', 'social', 'chatting', 'working',
   'reading_news', 'shopping', 'ai_chat', 'studying', 'deep_night', 'idle_long',
-  'coding', 'app_game', 'app_work', 'app_social', 'app_coding'
+  'coding', 'app_game', 'app_work', 'app_social', 'app_coding',
+  'daily'
 ];
 
 var SITUATION_LABELS = {
@@ -1174,7 +1178,8 @@ var SITUATION_LABELS = {
   reading_news: '看新闻', shopping: '购物', ai_chat: 'AI聊天',
   studying: '学习', deep_night: '深夜', idle_long: '长时间空闲',
   coding: '写代码', app_game: '打开游戏', app_work: '打开办公软件',
-  app_social: '打开社交', app_coding: '打开开发工具'
+  app_social: '打开社交', app_coding: '打开开发工具',
+  daily: '每日问候'
 };
 
 function renderDialogueEditor() {

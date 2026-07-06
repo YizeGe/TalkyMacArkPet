@@ -1408,10 +1408,12 @@ header {
 }
 
 .dg-line-text {
-  flex: 1; min-height: 36px; resize: vertical;
+  flex: 1; min-height: 48px; resize: vertical;
   background: var(--bg); color: var(--text);
   border: 1px solid var(--border); border-radius: 4px;
-  padding: 6px 8px; font-size: 13px; font-family: inherit;
+  padding: 8px 10px; font-size: 13px; font-family: inherit;
+  line-height: 1.7;
+  overflow-y: auto;
 }
 
 .dg-sep { border: none; border-top: 1px solid var(--border); margin: 10px 0; }

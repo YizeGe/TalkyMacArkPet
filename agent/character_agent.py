@@ -31,6 +31,8 @@ _DIALOGUE_KEYS = [
     # ---- 互动 ----
     "interact", "rest", "sleep", "special", "feed", "low_battery", "long_screen_time",
     "welcome", "farewell", "greeting",
+    # ---- 每日 ----
+    "daily",
     # ---- 带好感度前缀 ----
     "affection_interact", "affection_rest", "affection_sleep", "affection_special", "affection_feed", "affection_low_battery",
     "affection_coding", "affection_watching_video", "affection_social", "affection_chatting", "affection_gaming", "affection_working"
@@ -221,6 +223,7 @@ _DIALOGUE_TEMPLATES = {
     "app_switching": ["找什么东西吗？", "切来切去的。"],
     "low_battery": ["有点没电了……", "该充电了。"],
     "long_screen_time": ["看屏幕太久了，休息一下眼睛吧。"],
+    "daily": ["早安博士，今天也要打起精神来哦！", "又是新的一天，有什么计划吗？", "（轻快地）今天天气不错，适合工作呢！"],
 
     "affection_interact": ["（靠在身边）只要在你身边，就会觉得很安心呢。", "（微笑）能一直这样看着你就好了。"],
     "affection_rest": ["（依偎）稍微借你的肩膀靠一下哦……", "（安心）有你在旁边，感觉特别放松。"],
@@ -395,36 +398,36 @@ JSON 结构如下：
   "backgroundSummary": "背景故事摘要，200-300字",
   "signatureLines": ["经典台词1", "经典台词2", ...],  // 3-5条，直接用游戏原文
   "dialogues": {
-    // ---- 屏幕内容感知 ----
-    "coding": [{"lines": ["博士写代码好专注啊..."], "minAffection": 0, "cooldown": 60}],
-    "developing": [{"lines": ["这是IDE界面吧？"], "minAffection": 0, "cooldown": 60}],
-    "watching_video": [{"lines": ["屏幕里的画面很有趣呢。"], "minAffection": 0, "cooldown": 60}],
-    "social": [{"lines": ["网络上很热闹呢。"], "minAffection": 0, "cooldown": 60}],
-    "chatting": [{"lines": ["在和谁聊天呀？"], "minAffection": 0, "cooldown": 60}],
-    "reading_news": [{"lines": ["今天有什么大新闻吗？"], "minAffection": 0, "cooldown": 60}],
-    "shopping": [{"lines": ["又要买东西了？"], "minAffection": 0, "cooldown": 60}],
-    "gaming": [{"lines": ["让我看看博士怎么玩的。"], "minAffection": 0, "cooldown": 60}],
-    "working": [{"lines": ["别太累了，注意休息。"], "minAffection": 0, "cooldown": 60}],
-    "email": [{"lines": ["有新邮件哦。"], "minAffection": 0, "cooldown": 60}],
-    "designing": [{"lines": ["画得真好。"], "minAffection": 0, "cooldown": 60}],
-    "writing": [{"lines": ["在写什么长篇大论吗？"], "minAffection": 0, "cooldown": 60}],
-    "ai_chat": [{"lines": ["你在和人工智能对话？"], "minAffection": 0, "cooldown": 60}],
-    "studying": [{"lines": ["好认真啊，我也来陪你。"], "minAffection": 0, "cooldown": 60}],
-    "browsing": [{"lines": ["在网上随便逛逛？"], "minAffection": 0, "cooldown": 60}],
-    "devops": [{"lines": ["在部署服务吗？小心操作哦。"], "minAffection": 0, "cooldown": 60}],
+    // ---- 屏幕内容感知（每组2-3行台词） ----
+    "coding": [{"lines": ["博士写代码好专注啊...", "要不要我帮你盯着终端输出？"], "minAffection": 0, "cooldown": 60}],
+    "developing": [{"lines": ["这是IDE界面吧？", "看起来是个大工程呢。"], "minAffection": 0, "cooldown": 60}],
+    "watching_video": [{"lines": ["屏幕里的画面很有趣呢。", "让我也看看嘛。"], "minAffection": 0, "cooldown": 60}],
+    "social": [{"lines": ["网络上很热闹呢。", "博士也在冲浪吗？"], "minAffection": 0, "cooldown": 60}],
+    "chatting": [{"lines": ["在和谁聊天呀？", "看起来聊得很开心呢。"], "minAffection": 0, "cooldown": 60}],
+    "reading_news": [{"lines": ["今天有什么大新闻吗？", "给我也讲讲嘛。"], "minAffection": 0, "cooldown": 60}],
+    "shopping": [{"lines": ["又要买东西了？", "这次买了什么呢？"], "minAffection": 0, "cooldown": 60}],
+    "gaming": [{"lines": ["让我看看博士怎么玩的。", "操作不错嘛！"], "minAffection": 0, "cooldown": 60}],
+    "working": [{"lines": ["别太累了，注意休息。", "我去给你倒杯水。"], "minAffection": 0, "cooldown": 60}],
+    "email": [{"lines": ["有新邮件哦。", "看看谁发来的？"], "minAffection": 0, "cooldown": 60}],
+    "designing": [{"lines": ["画得真好。", "很有艺术感呢。"], "minAffection": 0, "cooldown": 60}],
+    "writing": [{"lines": ["在写什么长篇大论吗？", "让我也拜读一下。"], "minAffection": 0, "cooldown": 60}],
+    "ai_chat": [{"lines": ["你在和人工智能对话？", "它和我谁更懂你呢？"], "minAffection": 0, "cooldown": 60}],
+    "studying": [{"lines": ["好认真啊，我也来陪你。", "我们一起学习进步。"], "minAffection": 0, "cooldown": 60}],
+    "browsing": [{"lines": ["在网上随便逛逛？", "看到什么有趣的了？"], "minAffection": 0, "cooldown": 60}],
+    "devops": [{"lines": ["在部署服务吗？小心操作哦。", "我会替你加油的！"], "minAffection": 0, "cooldown": 60}],
     
-    // ---- 行为感知 ----
-    "deep_night": [{"lines": ["夜深了，博士，该休息了。"], "minAffection": 0, "cooldown": 120}],
-    "idle_long": [{"lines": ["博士？睡着了吗...？"], "minAffection": 0, "cooldown": 120}],
-    "work_overload": [{"lines": ["你工作太久了，快停下！"], "minAffection": 0, "cooldown": 120}],
-    "app_switching": [{"lines": ["切来切去的，找不到东西了吗？"], "minAffection": 0, "cooldown": 60}],
+    // ---- 行为感知（每组2-3行台词） ----
+    "deep_night": [{"lines": ["夜深了，博士，该休息了。", "熬夜对身体不好的。"], "minAffection": 0, "cooldown": 120}],
+    "idle_long": [{"lines": ["博士？睡着了吗...？", "那我就这样安静地陪着你吧。"], "minAffection": 0, "cooldown": 120}],
+    "work_overload": [{"lines": ["你工作太久了，快停下！", "我来监督你休息！"], "minAffection": 0, "cooldown": 120}],
+    "app_switching": [{"lines": ["切来切去的，找不到东西了吗？", "需要我帮忙吗？"], "minAffection": 0, "cooldown": 60}],
 
-    // ---- 互动 ----
-    "interact": [{"lines": ["你好！"], "minAffection": 0, "cooldown": 30}],
-    "rest": [{"lines": ["休息一下吧。"], "minAffection": 0, "cooldown": 60}],
-    "sleep": [{"lines": ["晚安..."], "minAffection": 0, "cooldown": 60}],
-    "special": [{"lines": ["嗯？怎么了？"], "minAffection": 0, "cooldown": 60}],
-    "feed": [{"lines": ["好吃的！"], "minAffection": 0, "cooldown": 60}],
+    // ---- 互动（每组2-3行台词） ----
+    "interact": [{"lines": ["你好！", "今天有什么想和我聊的吗？"], "minAffection": 0, "cooldown": 30}],
+    "rest": [{"lines": ["休息一下吧。", "我陪你一起歇会儿。"], "minAffection": 0, "cooldown": 60}],
+    "sleep": [{"lines": ["晚安...", "做个好梦。"], "minAffection": 0, "cooldown": 60}],
+    "special": [{"lines": ["嗯？怎么了？", "有什么事吗？"], "minAffection": 0, "cooldown": 60}],
+    "feed": [{"lines": ["好吃的！", "谢谢博士投喂！"], "minAffection": 0, "cooldown": 60}],
     "low_battery": [{"lines": ["该充电了。"], "minAffection": 0, "cooldown": 60}],
     "long_screen_time": [{"lines": ["盯着屏幕太久了。"], "minAffection": 0, "cooldown": 60}],
     "welcome": [{"lines": ["欢迎回来！"], "minAffection": 0, "cooldown": 30}],

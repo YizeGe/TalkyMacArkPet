@@ -101,7 +101,20 @@ final class CompanionEngine {
             model.moodLevel = max(0.0, model.moodLevel - 0.5)
         }
 
-        // 3. 状态联动 (低精力自动休眠)
+        // 3. 每日台词触发 (按自然日判断)
+        let todayStart = Calendar.current.startOfDay(for: now)
+        if let lastDaily = model.lastDailyLineDate {
+            if Calendar.current.startOfDay(for: lastDaily) < todayStart {
+                model.lastDailyLineDate = now
+                model.speak(kind: "daily")
+            }
+        } else {
+            // 首次启动
+            model.lastDailyLineDate = now
+            model.speak(kind: "daily")
+        }
+
+        // 4. 状态联动 (低精力自动休眠)
         if model.stamina <= 15 && model.mood == .idle {
             model.mood = .sleepy
             model.velocity = CGVector(dx: 0, dy: 0)
