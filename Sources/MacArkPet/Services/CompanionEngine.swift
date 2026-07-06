@@ -63,6 +63,9 @@ final class CompanionEngine {
             processMinuteUpdate(model: model, now: now)
         }
         
+        // 1.5 每日台词触发 (每次 tick 都检查,廉价操作)
+        checkDailyLine(model: model, now: now)
+
         // 2. CP 探测 (每 10 秒探测一次)
         if now.timeIntervalSince(lastCPCheck) > 10 {
             lastCPCheck = now
@@ -101,19 +104,6 @@ final class CompanionEngine {
             model.moodLevel = max(0.0, model.moodLevel - 0.5)
         }
 
-        // 3. 每日台词触发 (按自然日判断)
-        let todayStart = Calendar.current.startOfDay(for: now)
-        if let lastDaily = model.lastDailyLineDate {
-            if Calendar.current.startOfDay(for: lastDaily) < todayStart {
-                model.lastDailyLineDate = now
-                model.speak(kind: "daily")
-            }
-        } else {
-            // 首次启动
-            model.lastDailyLineDate = now
-            model.speak(kind: "daily")
-        }
-
         // 4. 状态联动 (低精力自动休眠)
         if model.stamina <= 15 && model.mood == .idle {
             model.mood = .sleepy
@@ -148,6 +138,26 @@ final class CompanionEngine {
             if model.mood == .idle {
                 model.mood = .sleepy
             }
+        }
+    }
+
+    // MARK: - 每日台词触发
+
+    /// 每天触发一次，按自然日判断。每次 tick 都会调用（操作极轻量）
+    @MainActor
+    private func checkDailyLine(model: PetModel, now: Date) {
+        let todayStart = Calendar.current.startOfDay(for: now)
+        guard let lastDaily = model.lastDailyLineDate else {
+            // 首次启动该角色
+            NSLog("[CompanionEngine] 🌅 First-ever daily line triggered for \(model.displayName)")
+            model.lastDailyLineDate = now
+            model.speak(kind: "daily")
+            return
+        }
+        if Calendar.current.startOfDay(for: lastDaily) < todayStart {
+            NSLog("[CompanionEngine] 🌅 Daily line triggered for \(model.displayName) at \(now)")
+            model.lastDailyLineDate = now
+            model.speak(kind: "daily")
         }
     }
 

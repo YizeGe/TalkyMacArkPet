@@ -730,8 +730,8 @@ private final class PetStatsStore {
             coins: coins,
             dailyStreak: dailyStreak,
             lastInteractionDate: lastInteractionDate,
-            lastDailyLineDate: lastDailyLineDate,
-            lastStateUpdate: lastStateUpdate
+            lastStateUpdate: lastStateUpdate,
+            lastDailyLineDate: lastDailyLineDate
         )
         cache[characterId] = all[characterId]
         if let encoded = try? JSONEncoder().encode(all) {
