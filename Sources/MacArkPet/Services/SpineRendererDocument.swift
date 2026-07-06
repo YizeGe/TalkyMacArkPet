@@ -153,15 +153,19 @@ struct SpineRendererDocument {
           <title>\(escapedHTML(title))</title>
           <script src="./spine-webgl.js"></script>
           <style>
-            html, body, canvas {
+            html, body {
               margin: 0;
               width: 100%;
               height: 100%;
               overflow: hidden;
               background: rgba(15,15,15,0.03);
             }
-            body { pointer-events: none; }
             canvas {
+              margin: 0;
+              width: 100%;
+              height: 100%;
+              overflow: hidden;
+              background: transparent;
               position: absolute;
               inset: 0;
               display: block;
