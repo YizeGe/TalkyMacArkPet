@@ -198,6 +198,8 @@ final class PetWindowController {
         resizeForCurrentModel(preserveBottom: true, allowDelayedShrink: false)
     }
 
+    private var animationHeartbeatCounter = 0
+
     private func startLoop() {
         timer?.cancel()
         let source = DispatchSource.makeTimerSource(queue: .main)
@@ -216,6 +218,14 @@ final class PetWindowController {
                 let totalH = NSScreen.main?.frame.height ?? 1
                 let dockHeight = totalH - dockRect.height
                 self.model.dockProximity = dockHeight > 10 ? dockHeight / totalH : 0
+            }
+
+            // ♥️ 动画心跳：每 ~2 秒强制重发动画指令到 JS
+            // 即使 animationKind() 未变化也重发，以防 WebGL 渲染循环静默崩溃后动画卡住
+            self.animationHeartbeatCounter += 1
+            if self.animationHeartbeatCounter >= 125 {
+                self.animationHeartbeatCounter = 0
+                NotificationCenter.default.post(name: .macArkPetForceSyncAnimation, object: nil)
             }
         }
         timer = source

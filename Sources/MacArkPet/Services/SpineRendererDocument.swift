@@ -507,31 +507,36 @@ struct SpineRendererDocument {
             }
 
             function render() {
-              const now = Date.now() / 1000;
-              const delta = Math.min(now - lastFrameTime, 1 / 20);
-              lastFrameTime = now;
+              try {
+                const now = Date.now() / 1000;
+                const delta = Math.min(now - lastFrameTime, 1 / 20);
+                lastFrameTime = now;
 
-              animationState.update(delta);
-              animationState.apply(skeleton);
-              lockRootMotion(skeleton);
-              skeleton.scaleX = facingLeft ? -1 : 1;
-              skeleton.updateWorldTransform();
-              resize();
+                animationState.update(delta);
+                animationState.apply(skeleton);
+                lockRootMotion(skeleton);
+                skeleton.scaleX = facingLeft ? -1 : 1;
+                skeleton.updateWorldTransform();
+                resize();
 
-              gl.clearColor(0, 0, 0, 0);
-              gl.clear(gl.COLOR_BUFFER_BIT);
-              shader.bind();
-              shader.setUniformi(spine.webgl.Shader.SAMPLER, 0);
-              shader.setUniform4x4f(spine.webgl.Shader.MVP_MATRIX, mvp.values);
-              batcher.begin(shader);
-              skeletonRenderer.draw(batcher, skeleton);
-              batcher.end();
-              shader.unbind();
+                gl.clearColor(0, 0, 0, 0);
+                gl.clear(gl.COLOR_BUFFER_BIT);
+                shader.bind();
+                shader.setUniformi(spine.webgl.Shader.SAMPLER, 0);
+                shader.setUniform4x4f(spine.webgl.Shader.MVP_MATRIX, mvp.values);
+                batcher.begin(shader);
+                skeletonRenderer.draw(batcher, skeleton);
+                batcher.end();
+                shader.unbind();
 
-              framesSinceBoundsPost += 1;
-              if (framesSinceBoundsPost >= 2 || !lastPixelBoundsKey) {
-                framesSinceBoundsPost = 0;
-                postPixelBounds();
+                framesSinceBoundsPost += 1;
+                if (framesSinceBoundsPost >= 2 || !lastPixelBoundsKey) {
+                  framesSinceBoundsPost = 0;
+                  postPixelBounds();
+                }
+              } catch (err) {
+                // 如果渲染循环抛出异常（如 gl.readPixels OOM），记录错误但不中断循环
+                post({ type: "error", message: "render catch: " + String(err && err.message ? err.message : err) });
               }
 
               requestAnimationFrame(render);

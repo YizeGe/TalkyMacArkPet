@@ -51,6 +51,28 @@ struct SpinePetWebView: NSViewRepresentable {
         private var lastScaleAffectsCamera: Bool?
         private var lastFacingLeft: Bool?
         private weak var currentModel: PetModel?
+        private var animationHeartbeatTicket: Int = 0
+
+        private static let forceSyncNotification = Notification.Name("MacArkPetForceSyncAnimation")
+
+        override init() {
+            super.init()
+            NotificationCenter.default.addObserver(
+                self,
+                selector: #selector(handleForceSyncNotification),
+                name: Self.forceSyncNotification,
+                object: nil
+            )
+        }
+
+        deinit {
+            NotificationCenter.default.removeObserver(self)
+        }
+
+        @objc private func handleForceSyncNotification() {
+            guard let model = currentModel else { return }
+            forceSyncAnimation(model)
+        }
 
         func reloadIfNeeded(_ model: PetModel) {
             currentModel = model
@@ -105,6 +127,15 @@ struct SpinePetWebView: NSViewRepresentable {
             webView.evaluateJavaScript("window.setPetAnimation && window.setPetAnimation('\(kind)')", completionHandler: nil)
         }
 
+        /// 强制重发动画指令（不检查 kind 是否变化）。
+        /// 用于定时心跳恢复 WebGL 渲染循环静默崩溃后的动画状态。
+        func forceSyncAnimation(_ model: PetModel) {
+            guard isReady, let webView else { return }
+            let kind = model.animationKind()
+            lastAnimationKind = kind
+            webView.evaluateJavaScript("window.setPetAnimation && window.setPetAnimation('\(kind)')", completionHandler: nil)
+        }
+
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
             isReady = true
             if let currentModel {
@@ -154,4 +185,10 @@ struct SpinePetWebView: NSViewRepresentable {
             }
         }
     }
+}
+
+// MARK: - 通知名称扩展
+
+extension Notification.Name {
+    static let macArkPetForceSyncAnimation = Notification.Name("MacArkPetForceSyncAnimation")
 }
