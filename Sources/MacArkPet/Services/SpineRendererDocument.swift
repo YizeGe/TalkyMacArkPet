@@ -386,7 +386,7 @@ struct SpineRendererDocument {
               if (!animationState) return;
               const nextKind = kind || "idle";
               const next = chooseAnimation(nextKind);
-              const isOneShot = nextKind === "interact" || nextKind === "special" || nextKind === "rest" || nextKind === "sleep";
+              const isOneShot = nextKind === "interact" || nextKind === "special";
               if (!next || (next === currentAnimation && nextKind === currentKind && !isOneShot)) return;
               currentKind = nextKind;
               currentAnimation = next;

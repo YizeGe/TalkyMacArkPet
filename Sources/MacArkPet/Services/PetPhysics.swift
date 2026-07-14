@@ -216,7 +216,7 @@ struct PetPhysics {
             model.facingLeft = model.velocity.dx < 0
         }
 
-        if model.stamina <= 0 && model.mood != .sleepy {
+        if model.stamina <= 0 && model.mood != .sleepy && model.stayMode == nil {
             model.nextMoodChange = now
         }
 
@@ -240,7 +240,7 @@ struct PetPhysics {
 
     private func pickNextIdleAction(model: PetModel, onWindowSurface: Bool) {
         // 📍 体力耗尽，强制躺下睡觉
-        if model.stamina <= 0 {
+        if model.stamina <= 0 && model.stayMode == nil {
             model.mood = .sleepy
             model.velocity = CGVector(dx: 0, dy: 0)
             model.nextMoodChange = Date().addingTimeInterval(10)

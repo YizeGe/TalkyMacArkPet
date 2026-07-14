@@ -123,7 +123,7 @@ struct SpinePetWebView: NSViewRepresentable {
             let kind = model.animationKind()
 
             guard kind != lastAnimationKind else { return }
-            NSLog("[DEBUG] Syncing animation: %@", kind); lastAnimationKind = kind
+            lastAnimationKind = kind
             webView.evaluateJavaScript("window.setPetAnimation && window.setPetAnimation('\(kind)')", completionHandler: nil)
         }
 
@@ -140,7 +140,7 @@ struct SpinePetWebView: NSViewRepresentable {
             if kind == "interact" || kind == "special" {
                 return
             }
-            NSLog("[DEBUG] Syncing animation: %@", kind); lastAnimationKind = kind
+            lastAnimationKind = kind
             webView.evaluateJavaScript("window.setPetAnimation && window.setPetAnimation('\(kind)')", completionHandler: nil)
         }
 

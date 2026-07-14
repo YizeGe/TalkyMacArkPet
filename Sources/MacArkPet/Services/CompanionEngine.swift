@@ -109,15 +109,17 @@ final class CompanionEngine {
             model.moodLevel = max(0.0, model.moodLevel - 0.5)
         }
 
-        // 4. 状态联动 (低精力自动休眠)
-        if model.stamina <= 15 && model.mood == .idle {
-            model.mood = .sleepy
-            model.velocity = CGVector(dx: 0, dy: 0)
-            model.nextMoodChange = now.addingTimeInterval(8)
-            model.speak(kind: "low_battery") // 或者配置新的 low_stamina 台词
-        } else if model.stamina >= 40 && model.mood == .sleepy && model.nextMoodChange < now {
-            model.mood = .idle
-            model.nextMoodChange = now.addingTimeInterval(TimeInterval.random(in: 8...14))
+        // 4. 状态联动 (低精力自动休眠) — 停靠模式下跳过
+        if model.stayMode == nil {
+            if model.stamina <= 15 && model.mood == .idle {
+                model.mood = .sleepy
+                model.velocity = CGVector(dx: 0, dy: 0)
+                model.nextMoodChange = now.addingTimeInterval(8)
+                model.speak(kind: "low_battery")
+            } else if model.stamina >= 40 && model.mood == .sleepy && model.nextMoodChange < now {
+                model.mood = .idle
+                model.nextMoodChange = now.addingTimeInterval(TimeInterval.random(in: 8...14))
+            }
         }
 
         // 保存状态
