@@ -129,9 +129,17 @@ struct SpinePetWebView: NSViewRepresentable {
 
         /// 强制重发动画指令（不检查 kind 是否变化）。
         /// 用于定时心跳恢复 WebGL 渲染循环静默崩溃后的动画状态。
+        /// 对 one-shot 动画（interact / special）跳过重发，避免心跳把正在播放的
+        /// 长动画从头重播，导致超过 2 秒的动画永远只播放前 2 秒。
         func forceSyncAnimation(_ model: PetModel) {
             guard isReady, let webView else { return }
             let kind = model.animationKind()
+            // One-shot 动画自带 complete 回调，不需要心跳保护；
+            // 强制重发会导致 setAnimation 从头播放并重置 oneShotCompletionSent，
+            // 使动画永远无法完成。
+            if kind == "interact" || kind == "special" {
+                return
+            }
             lastAnimationKind = kind
             webView.evaluateJavaScript("window.setPetAnimation && window.setPetAnimation('\(kind)')", completionHandler: nil)
         }

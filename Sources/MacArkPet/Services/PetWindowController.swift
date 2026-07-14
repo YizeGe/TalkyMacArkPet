@@ -114,7 +114,8 @@ final class PetWindowController {
     deinit {
         NotificationCenter.default.removeObserver(self)
         CombatManager.shared.cleanUpStale()
-        bubbleWindow.close()
+        let win = bubbleWindow
+        Task { @MainActor in win.close() }
     }
 
     func show() {

@@ -328,7 +328,9 @@ final class ScreenWatcherService {
             let minIdle = min(idle, mouseIdle)
 
             if minIdle < 2.0 {
-                self.lastInputEvent = Date()
+                Task { @MainActor in
+                    self.lastInputEvent = Date()
+                }
             }
         }
     }

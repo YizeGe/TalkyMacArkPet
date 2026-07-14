@@ -3,8 +3,9 @@
 
 import AppKit
 
-let app = NSApplication.shared
-
-app.delegate = MacArkPetApp.shared
-app.setActivationPolicy(.regular)
-app.run()
+MainActor.assumeIsolated {
+    let app = NSApplication.shared
+    app.delegate = MacArkPetApp.shared
+    app.setActivationPolicy(.regular)
+    app.run()
+}

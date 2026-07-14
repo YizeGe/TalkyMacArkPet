@@ -44,6 +44,35 @@ enum DialogueSituation: String, CaseIterable, Codable {
     // ---- 每日/首次 ----
     case daily
 
+    // ---- 🍅 番茄钟 ----
+    case pomodoro_start       // 开始专注
+    case pomodoro_halfway     // 专注过半鼓励
+    case pomodoro_break       // 休息时间
+    case pomodoro_resume      // 休息结束继续
+    case pomodoro_complete    // 完成一轮
+
+    // ---- 💕 好感度里程碑 ----
+    case affection_milestone_25
+    case affection_milestone_50
+    case affection_milestone_75
+    case affection_milestone_100
+
+    // ---- 🎄 节日/生日 ----
+    case birthday             // 角色生日
+    case holiday_new_year
+    case holiday_spring_festival
+    case holiday_lantern_festival
+    case holiday_valentines
+    case holiday_labor_day
+    case holiday_dragon_boat
+    case holiday_mid_autumn
+    case holiday_national_day
+    case holiday_christmas
+
+    // ---- 📊 每日总结/日记 ----
+    case daily_summary
+    case daily_diary
+
     // ---- 带好感度前缀 ----
     var affectionVariants: [DialogueSituation] {
         switch self {

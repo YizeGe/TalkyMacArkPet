@@ -78,40 +78,42 @@ final class ConfigWebServer {
     /// 持续读取直到收到完整 HTTP 请求
     private static func receiveAll(_ connection: NWConnection, buffer: Data) {
         connection.receive(minimumIncompleteLength: 1, maximumLength: 65536) { data, _, _, error in
-            guard let data = data else {
-                connection.cancel()
-                return
-            }
-            var accumulated = buffer
-            accumulated.append(data)
-
-            guard let raw = String(data: accumulated, encoding: .utf8) else {
-                connection.cancel()
-                return
-            }
-
-            // 检查是否收到了完整请求
-            let headerEnd = raw.range(of: "\r\n\r\n")
-            if let headerRange = headerEnd {
-                // 有 Content-Length? 检查 body 是否完整
-                let headerSection = raw[raw.startIndex..<headerRange.lowerBound]
-                let bodyStart = headerRange.upperBound
-                let bodyStr = raw[bodyStart...]
-
-                if let clLine = headerSection.components(separatedBy: "\r\n").first(where: { $0.lowercased().hasPrefix("content-length:") }),
-                   let clValue = Int(clLine.dropFirst("content-length:".count).trimmingCharacters(in: .whitespaces)) {
-                    // 有 Content-Length，检查 body 长度
-                    if bodyStr.utf8.count < clValue {
-                        // body 还没到齐，继续读
-                        Self.receiveAll(connection, buffer: accumulated)
-                        return
-                    }
+            Task { @MainActor in
+                guard let data = data else {
+                    connection.cancel()
+                    return
                 }
-                // body 完整了，处理请求
-                Self.handleRequest(raw, connection: connection)
-            } else {
-                // 还没收到 header 结尾，继续读
-                Self.receiveAll(connection, buffer: accumulated)
+                var accumulated = buffer
+                accumulated.append(data)
+
+                guard let raw = String(data: accumulated, encoding: .utf8) else {
+                    connection.cancel()
+                    return
+                }
+
+                // 检查是否收到了完整请求
+                let headerEnd = raw.range(of: "\r\n\r\n")
+                if let headerRange = headerEnd {
+                    // 有 Content-Length? 检查 body 是否完整
+                    let headerSection = raw[raw.startIndex..<headerRange.lowerBound]
+                    let bodyStart = headerRange.upperBound
+                    let bodyStr = raw[bodyStart...]
+
+                    if let clLine = headerSection.components(separatedBy: "\r\n").first(where: { $0.lowercased().hasPrefix("content-length:") }),
+                       let clValue = Int(clLine.dropFirst("content-length:".count).trimmingCharacters(in: .whitespaces)) {
+                        // 有 Content-Length，检查 body 长度
+                        if bodyStr.utf8.count < clValue {
+                            // body 还没到齐，继续读
+                            Self.receiveAll(connection, buffer: accumulated)
+                            return
+                        }
+                    }
+                    // body 完整了，处理请求
+                    Self.handleRequest(raw, connection: connection)
+                } else {
+                    // 还没收到 header 结尾，继续读
+                    Self.receiveAll(connection, buffer: accumulated)
+                }
             }
         }
     }
@@ -145,6 +147,8 @@ final class ConfigWebServer {
             handleAvailablePets(connection)
         case ("GET", "/api/ai-config"):
             handleGetAIConfig(connection)
+        case ("GET", "/api/activity"):
+            handleGetActivity(connection)
         case ("GET", _) where path.hasPrefix("/api/"):
             handleAPI(connection, path: path)
         case ("GET", _):
@@ -246,8 +250,21 @@ final class ConfigWebServer {
             // 手动触发测试（返回成功即可，前端本地模拟）
             sendJSON(connection, body: #"{"success": true}"#)
 
+        case "/api/activity":
+            handleGetActivity(connection)
+
         default:
             sendResponse(connection, status: 404, body: "Unknown API")
+        }
+    }
+
+    private static func handleGetActivity(_ connection: NWConnection) {
+        let today = ActivityTracker.shared.today
+        if let data = try? JSONEncoder().encode(today),
+           let json = String(data: data, encoding: .utf8) {
+            sendJSON(connection, body: json)
+        } else {
+            sendJSON(connection, body: #"{"error": "encode failed"}"#)
         }
     }
 

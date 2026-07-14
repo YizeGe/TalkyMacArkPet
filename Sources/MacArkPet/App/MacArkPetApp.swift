@@ -29,6 +29,9 @@ final class MacArkPetApp: NSObject, NSApplicationDelegate {
         DialogueEngine.shared.load()
         DialogueEngine.shared.loadProfiles()
 
+        // 📊 活动与日记追踪
+        ActivityTracker.shared.start()
+
         // 🕸️ 启动配置管理 Web 服务器
         ConfigWebServer.shared.start()
 
@@ -259,6 +262,20 @@ final class MacArkPetApp: NSObject, NSApplicationDelegate {
 
             menu.addItem(NSMenuItem(title: L10n.menuResetPosition(language), action: #selector(resetAllPositions), keyEquivalent: "r"))
             menu.addItem(.separator())
+
+            // 🍅 全局番茄钟控制
+            let isAnyPomodoroActive = petControllers.contains { $0.model.pomodoroActive }
+            if isAnyPomodoroActive {
+                menu.addItem(NSMenuItem(title: "🛑 取消全局番茄钟", action: #selector(cancelPomodoroAll), keyEquivalent: ""))
+            } else {
+                menu.addItem(NSMenuItem(title: "🍅 开始全局专注 (25分)", action: #selector(startPomodoroAll), keyEquivalent: ""))
+            }
+            menu.addItem(.separator())
+
+            // 📔 日记与总结
+            menu.addItem(NSMenuItem(title: "📔 查看今日日记", action: #selector(showTodayDiary), keyEquivalent: ""))
+            menu.addItem(NSMenuItem(title: "📊 查看今日总结", action: #selector(showTodaySummary), keyEquivalent: ""))
+            menu.addItem(.separator())
         }
 
         menu.addItem(languageMenuItem(language: language))
@@ -326,6 +343,19 @@ final class MacArkPetApp: NSObject, NSApplicationDelegate {
             let lieItem = NSMenuItem(title: "🛏️ 躺在这里", action: #selector(stayHerePet(_:)), keyEquivalent: "")
             lieItem.representedObject = StayMenuPayload(controllerIndex: controllerIndex, mode: .lieHere)
             submenu.addItem(lieItem)
+        }
+
+        submenu.addItem(.separator())
+
+        // 🍅 单体番茄钟
+        if model.pomodoroActive {
+            let cancelPomo = NSMenuItem(title: "🛑 取消番茄钟", action: #selector(cancelPomodoroPet(_:)), keyEquivalent: "")
+            cancelPomo.representedObject = controllerIndex
+            submenu.addItem(cancelPomo)
+        } else {
+            let startPomo = NSMenuItem(title: "🍅 陪我专注 (25分)", action: #selector(startPomodoroPet(_:)), keyEquivalent: "")
+            startPomo.representedObject = controllerIndex
+            submenu.addItem(startPomo)
         }
 
         submenu.addItem(.separator())
@@ -450,6 +480,18 @@ final class MacArkPetApp: NSObject, NSApplicationDelegate {
         ctrl.model.sleep()
     }
 
+    @objc private func startPomodoroPet(_ sender: NSMenuItem) {
+        guard let index = sender.representedObject as? Int, let ctrl = pet(at: index) else { return }
+        ctrl.model.startPomodoro()
+        refreshMenus()
+    }
+
+    @objc private func cancelPomodoroPet(_ sender: NSMenuItem) {
+        guard let index = sender.representedObject as? Int, let ctrl = pet(at: index) else { return }
+        ctrl.model.cancelPomodoro()
+        refreshMenus()
+    }
+
     @objc private func feedPet(_ sender: NSMenuItem) {
         guard let index = sender.representedObject as? Int, let ctrl = pet(at: index) else { return }
         ctrl.model.feed()
@@ -512,6 +554,20 @@ final class MacArkPetApp: NSObject, NSApplicationDelegate {
         }
     }
 
+    @objc private func startPomodoroAll() {
+        for ctrl in petControllers {
+            ctrl.model.startPomodoro()
+        }
+        refreshMenus()
+    }
+
+    @objc private func cancelPomodoroAll() {
+        for ctrl in petControllers {
+            ctrl.model.cancelPomodoro()
+        }
+        refreshMenus()
+    }
+
     @objc private func showAllStatus() {
         guard !petControllers.isEmpty else { return }
         let language = AppLanguage.current
@@ -532,6 +588,30 @@ final class MacArkPetApp: NSObject, NSApplicationDelegate {
         alert.messageText = L10n.menuAllPetsStatus(language)
         alert.informativeText = lines.dropLast().joined(separator: "\n")  // drop trailing empty line
         alert.addButton(withTitle: "收到")
+        alert.runModal()
+    }
+
+    // MARK: - 日记与总结查看
+
+    @objc private func showTodayDiary() {
+        let date = ActivityTracker.shared.today.date
+        let diary = ActivityTracker.shared.getDiary(for: date) ?? "今天暂时没有日记哦～（可以等晚间23点以后再来看看）"
+        
+        let alert = NSAlert()
+        alert.messageText = "📔 今日桌宠日记"
+        alert.informativeText = diary
+        alert.addButton(withTitle: "关闭")
+        alert.runModal()
+    }
+
+    @objc private func showTodaySummary() {
+        let date = ActivityTracker.shared.today.date
+        let summary = ActivityTracker.shared.getSummary(for: date) ?? "今天暂时没有总结哦～（可以等晚间22点以后再来看看）\n\n【今日基础活动】\n\(ActivityTracker.shared.todaySummaryText())"
+        
+        let alert = NSAlert()
+        alert.messageText = "📊 今日活动总结"
+        alert.informativeText = summary
+        alert.addButton(withTitle: "关闭")
         alert.runModal()
     }
 

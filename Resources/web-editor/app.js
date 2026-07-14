@@ -1840,7 +1840,7 @@ function showAIConfig() {
 function renderAIConfigForm() {
   var d = _aiConfigData || {};
   var html = '<div class="ai-config-inner">'
-    + '<span class="ai-config-label">🤖 AI API 配置</span>'
+    + '<span class="ai-config-label">🤖 全局 AI API 配置 (用于生成角色、日记、总结)</span>'
     + '<div class="ai-config-fields">'
     + '<input type="password" id="aiApiKey" placeholder="API Key" value="" class="ai-input-sm">'
     + '<input type="text" id="aiApiBase" placeholder="API Base URL" value="' + escAttr(d.api_base || 'https://api.deepseek.com/v4') + '" class="ai-input-sm">'

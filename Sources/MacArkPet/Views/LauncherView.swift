@@ -338,6 +338,8 @@ private struct ModelDetail: View {
                 // 🌐 网页同步设置
                 WebSyncSettings(language: language)
 
+                // 🧠 AI 服务设置 (DeepSeek) 已迁移至 WebUI
+
                 Spacer()
 
                 Button {
@@ -437,6 +439,7 @@ private struct WebSyncSettings: View {
         }
     }
 }
+
 
 
 private struct TuningControl: View {

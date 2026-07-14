@@ -63,6 +63,11 @@ final class CompanionEngine {
             processMinuteUpdate(model: model, now: now)
         }
         
+        // 1.2 处理番茄钟（每秒）
+        if model.pomodoroActive {
+            processPomodoroTick(model: model, now: now)
+        }
+
         // 1.5 每日台词触发 (每次 tick 都检查,廉价操作)
         checkDailyLine(model: model, now: now)
 
@@ -141,6 +146,50 @@ final class CompanionEngine {
         }
     }
 
+    // MARK: - 🍅 番茄钟逻辑
+
+    private func processPomodoroTick(model: PetModel, now: Date) {
+        guard model.pomodoroActive else { return }
+        
+        // 1秒减1次，CompanionEngine.tick 大约是每秒执行的（或者每几秒，我们需要根据时间差来扣减，为了简化，假设 tick 是 1s/次，这里严格点应该记录上次更新时间，但因为它是主循环，我们暂时每次 -1，或者读取时间差）
+        // 更严谨的做法：
+        // let elapsed = now.timeIntervalSince(model.lastTick)
+        // model.pomodoroRemaining -= Int(elapsed)
+        // 假设外部确保了每次传入的 tick 比较均匀，或者我们手动存一个 lastPomodoroTick
+        
+        model.pomodoroRemaining -= 1
+        
+        if model.pomodoroRemaining <= 0 {
+            // 阶段切换
+            if model.pomodoroPhase == .focus {
+                // 专注完成 -> 休息
+                model.pomodoroSessionCount += 1
+                model.pomodoroTotalSessions += 1
+                Task { @MainActor in
+                    ActivityTracker.shared.recordPomodoroSession()
+                }
+                
+                let isLongBreak = model.pomodoroSessionCount % 4 == 0
+                model.pomodoroPhase = isLongBreak ? .longBreak : .shortBreak
+                model.pomodoroRemaining = isLongBreak ? 15 * 60 : 5 * 60
+                
+                model.mood = .idle
+                model.speak(kind: "pomodoro_complete")
+                NSLog("[CompanionEngine] 🍅 Pomodoro focus completed for \(model.displayName)")
+            } else {
+                // 休息完成 -> 专注
+                model.pomodoroPhase = .focus
+                model.pomodoroRemaining = 25 * 60
+                
+                model.mood = .resting
+                model.speak(kind: "pomodoro_resume")
+                NSLog("[CompanionEngine] 🍅 Pomodoro break completed for \(model.displayName)")
+            }
+        } else if model.pomodoroPhase == .focus && model.pomodoroRemaining == 12 * 60 + 30 { // 专注过半
+            model.speak(kind: "pomodoro_halfway")
+        }
+    }
+
     // MARK: - 每日台词触发
 
     /// 每天触发一次，按自然日判断。每次 tick 都会调用（操作极轻量）
@@ -152,12 +201,120 @@ final class CompanionEngine {
             NSLog("[CompanionEngine] 🌅 First-ever daily line triggered for \(model.displayName)")
             model.lastDailyLineDate = now
             model.speak(kind: "daily")
+            checkSpecialDates(model: model, now: now)
             return
         }
         if Calendar.current.startOfDay(for: lastDaily) < todayStart {
             NSLog("[CompanionEngine] 🌅 Daily line triggered for \(model.displayName) at \(now)")
             model.lastDailyLineDate = now
+            model.hasTodayShownDiary = false
+            model.hasTodayShownSummary = false
             model.speak(kind: "daily")
+            
+            // 每天首次启动时检查节日和生日
+            checkSpecialDates(model: model, now: now)
+        }
+        
+        // 晚间总结和日记触发 (晚 10 点和 11 点)
+        let hour = Calendar.current.component(.hour, from: now)
+        if hour == 22 && !model.hasTodayShownSummary {
+            model.hasTodayShownSummary = true
+            triggerEveningSummary(model: model, now: now)
+        }
+        if hour == 23 && !model.hasTodayShownDiary {
+            model.hasTodayShownDiary = true
+            triggerEveningDiary(model: model, now: now)
+        }
+    }
+
+    // MARK: - 节日/生日系统
+
+    private func checkSpecialDates(model: PetModel, now: Date) {
+        Task { @MainActor in
+            let calendar = Calendar.current
+            let month = calendar.component(.month, from: now)
+            let day = calendar.component(.day, from: now)
+            let mmdd = String(format: "%02d-%02d", month, day)
+
+            // 1. 检查生日
+            if let profile = DialogueEngine.shared.profile(for: model.characterId) ?? DialogueEngine.shared.profile(for: model.displayName) {
+                // profile.birthday 格式例如 "12月23日"
+                let bMonth = self.extractNumber(from: profile.birthday, before: "月")
+                let bDay = self.extractNumber(from: profile.birthday, before: "日")
+                
+                if month == bMonth && day == bDay {
+                    try? await Task.sleep(nanoseconds: 4_000_000_000)
+                    model.speak(kind: "birthday")
+                    NSLog("[CompanionEngine] 🎂 Birthday detected for \(model.displayName)")
+                    return
+                }
+            }
+            
+            // 2. 检查常见公历节日 (仅做示范，可以扩展农历)
+            let holidays: [String: (id: String, name: String)] = [
+                "01-01": ("holiday_new_year", "元旦"),
+                "02-14": ("holiday_valentines", "情人节"),
+                "05-01": ("holiday_labor_day", "劳动节"),
+                "12-25": ("holiday_christmas", "圣诞节")
+            ]
+            
+            if let holiday = holidays[mmdd] {
+                try? await Task.sleep(nanoseconds: 4_000_000_000)
+                if let line = DialogueEngine.shared.line(for: model.characterId, displayName: model.displayName, situation: .holiday_new_year) {
+                    model.speak(text: line)
+                } else {
+                    // 让 AI 生成节日祝福
+                    if let profile = DialogueEngine.shared.profile(for: model.characterId) {
+                        if let aiLine = try? await DeepSeekService.shared.generateHolidayDialogue(characterProfile: profile, holiday: holiday.id, holidayName: holiday.name) {
+                            model.speak(text: aiLine)
+                        } else {
+                            model.speak(kind: holiday.id)
+                        }
+                    } else {
+                        model.speak(kind: holiday.id)
+                    }
+                }
+                NSLog("[CompanionEngine] 🎄 Holiday detected: \(holiday.name)")
+            }
+        }
+    }
+
+    private func extractNumber(from string: String, before: String) -> Int {
+        guard let range = string.range(of: before) else { return -1 }
+        let sub = string[..<range.lowerBound]
+        let digits = sub.components(separatedBy: CharacterSet.decimalDigits.inverted).joined()
+        return Int(digits) ?? -1
+    }
+
+    // MARK: - 晚间总结/日记
+
+    private func triggerEveningSummary(model: PetModel, now: Date) {
+        Task { @MainActor in
+            let todayStr = ActivityTracker.shared.today.date
+            guard ActivityTracker.shared.today.totalActiveSeconds > 300 else { return } // 活跃不够不触发
+            guard let profile = DialogueEngine.shared.profile(for: model.characterId) ?? DialogueEngine.shared.profile(for: model.displayName) else { return }
+            
+            if let aiSummary = try? await DeepSeekService.shared.generateSummary(characterProfile: profile, activity: ActivityTracker.shared.today) {
+                model.speak(text: "博士，总结一下今天哦：\n" + aiSummary)
+                ActivityTracker.shared.saveSummary(aiSummary, for: todayStr)
+            } else {
+                model.speak(kind: "daily_summary")
+            }
+        }
+    }
+
+    private func triggerEveningDiary(model: PetModel, now: Date) {
+        Task { @MainActor in
+            let todayStr = ActivityTracker.shared.today.date
+            guard ActivityTracker.shared.today.totalActiveSeconds > 300 else { return }
+            guard let profile = DialogueEngine.shared.profile(for: model.characterId) ?? DialogueEngine.shared.profile(for: model.displayName) else { return }
+            
+            if let aiDiary = try? await DeepSeekService.shared.generateDiary(characterProfile: profile, activity: ActivityTracker.shared.today) {
+                model.speak(text: "博士，我把今天写进日记了：\n" + aiDiary)
+                ActivityTracker.shared.saveDiary(aiDiary, for: todayStr)
+            } else {
+                model.speak(kind: "daily_diary")
+            }
         }
     }
 

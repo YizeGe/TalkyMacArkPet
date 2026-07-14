@@ -48,6 +48,14 @@ final class PetModel: ObservableObject {
     @Published var dialogueText: String = ""
     @Published var isSpeaking: Bool = false
 
+    // 🍅 番茄钟状态
+    enum PomodoroPhase: String { case idle, focus, shortBreak, longBreak }
+    @Published var pomodoroActive: Bool = false
+    @Published var pomodoroPhase: PomodoroPhase = .idle
+    @Published var pomodoroRemaining: Int = 0         // 剩余秒数
+    @Published var pomodoroSessionCount: Int = 0      // 今日完成轮数
+    var pomodoroTotalSessions: Int = 0                // 历史总轮数
+
     // 🖥️ 屏幕感知对话
     @Published var lastScreenContext: ScreenContext?
     @Published var lastDialogueSituation: String = ""
@@ -105,6 +113,9 @@ final class PetModel: ObservableObject {
     @Published var lastInteractionDate: Date?
     @Published var dailyStreak: Int = 0   // 连续登录天数
     var lastDailyLineDate: Date?  // 每日台词最后触发日期（按天判断）
+    var milestoneReached: Set<Int> = []  // 已触发的好感度里程碑
+    var hasTodayShownDiary: Bool = false
+    var hasTodayShownSummary: Bool = false
     private let statsStore = PetStatsStore()
 
     // 🗺️ Desktop awareness
@@ -157,13 +168,22 @@ final class PetModel: ObservableObject {
         nextMoodChange = Date().addingTimeInterval(5)
 
         // 🐾 Affection up!
+        let oldAffection = affection
         let bonus = checkDailyBonus()
         affection = min(100, affection + 2 + bonus)
         
         // 🐾 每点一次加 1 个金币
         coins += 1
 
+        // 📊 记录互动
+        Task { @MainActor in
+            ActivityTracker.shared.recordPoke()
+        }
+
         speak(kind: "interact")
+
+        // 💕 好感度里程碑检测
+        checkAffectionMilestone(oldValue: oldAffection, newValue: affection)
     }
 
     private func checkDailyBonus() -> Int {
@@ -208,6 +228,7 @@ final class PetModel: ObservableObject {
             speak(text: "博士，金币不足呢 (需要30金币)")
             return false
         }
+        let oldAffection = affection
         coins -= 30
         stamina = min(100, stamina + 30)
         moodLevel = min(100, moodLevel + 20)
@@ -219,12 +240,29 @@ final class PetModel: ObservableObject {
         mood = .happy
         velocity = CGVector(dx: 0, dy: 0)
         nextMoodChange = Date().addingTimeInterval(4)
+
+        // 📊 记录喂食
+        Task { @MainActor in
+            ActivityTracker.shared.recordFeed()
+        }
+
         speak(kind: "feed")
+
+        // 💕 好感度里程碑检测
+        checkAffectionMilestone(oldValue: oldAffection, newValue: affection)
         return true
     }
 
     var statusText: String {
-        "\(displayName)\n❤️ 好感度: \(affection)/100\n⚡ 精力: \(Int(stamina))/100\n✨ 心情: \(Int(moodLevel))/100\n💰 金币: \(coins)"
+        var text = "\(displayName)\n❤️ 好感度: \(affection)/100\n⚡ 精力: \(Int(stamina))/100\n✨ 心情: \(Int(moodLevel))/100\n💰 金币: \(coins)"
+        if pomodoroActive {
+            let phaseLabel = pomodoroPhase == .focus ? "专注中" : "休息中"
+            text += "\n🍅 番茄钟: \(phaseLabel) (\(pomodoroRemaining / 60):\(String(format: "%02d", pomodoroRemaining % 60)))"
+        }
+        if pomodoroSessionCount > 0 {
+            text += "\n🍅 今日完成: \(pomodoroSessionCount) 轮"
+        }
+        return text
     }
 
     func sleep() {
@@ -523,6 +561,72 @@ final class PetModel: ObservableObject {
         }
     }
 
+    // MARK: - 🍅 番茄钟
+
+    func startPomodoro() {
+        pomodoroActive = true
+        pomodoroPhase = .focus
+        pomodoroRemaining = 25 * 60  // 25 分钟
+        mood = .resting
+        velocity = CGVector(dx: 0, dy: 0)
+        speak(kind: "pomodoro_start")
+        NSLog("[PetModel] 🍅 Pomodoro started for \(displayName)")
+    }
+
+    func cancelPomodoro() {
+        pomodoroActive = false
+        pomodoroPhase = .idle
+        pomodoroRemaining = 0
+        if mood == .resting {
+            mood = .idle
+            nextMoodChange = Date().addingTimeInterval(TimeInterval.random(in: 8...14))
+        }
+        NSLog("[PetModel] 🍅 Pomodoro cancelled for \(displayName)")
+    }
+
+    // MARK: - 💕 好感度里程碑
+
+    private func checkAffectionMilestone(oldValue: Int, newValue: Int) {
+        let milestones = [25, 50, 75, 100]
+        for m in milestones {
+            if oldValue < m && newValue >= m && !milestoneReached.contains(m) {
+                milestoneReached.insert(m)
+                let kind = "affection_milestone_\(m)"
+                // 延迟 1.5 秒后触发，避免和 interact 对话冲突
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
+                    guard let self else { return }
+                    self.mood = .special
+                    self.velocity = CGVector(dx: 0, dy: 0)
+                    self.nextMoodChange = Date().addingTimeInterval(8)
+
+                    // 先尝试本地对话，如果没有则尝试 AI 生成
+                    if let line = DialogueEngine.shared.line(for: self.characterId, displayName: self.displayName, moodKind: kind, affection: self.affection) {
+                        self.speak(text: line)
+                    } else if let profile = DialogueEngine.shared.profile(for: self.characterId) ?? DialogueEngine.shared.profile(for: self.displayName) {
+                        Task {
+                            if let aiLine = try? await DeepSeekService.shared.generateMilestoneDialogue(characterProfile: profile, milestone: m) {
+                                await MainActor.run { self.speak(text: aiLine) }
+                            } else {
+                                // Fallback 通用文案
+                                let fallbacks: [Int: String] = [
+                                    25: "我们...算是朋友了吧？",
+                                    50: "和你在一起的时间，我很珍惜。",
+                                    75: "博士，你对我来说已经很特别了。",
+                                    100: "无论发生什么，我都会在你身边。"
+                                ]
+                                await MainActor.run { self.speak(text: fallbacks[m] ?? "谢谢你，博士。") }
+                            }
+                        }
+                    } else {
+                        self.speak(kind: kind)
+                    }
+                    NSLog("[PetModel] 💕 Affection milestone \(m) reached for \(self.displayName)!")
+                }
+                break  // 一次只触发一个里程碑
+            }
+        }
+    }
+
     func apply(model: ArkModelItem) {
         displayName = model.title
         characterId = model.voiceCharacterID
@@ -555,7 +659,9 @@ final class PetModel: ObservableObject {
             dailyStreak: dailyStreak,
             lastInteractionDate: lastInteractionDate,
             lastDailyLineDate: lastDailyLineDate,
-            lastStateUpdate: Date()
+            lastStateUpdate: Date(),
+            pomodoroTotalSessions: pomodoroTotalSessions,
+            milestoneReached: Array(milestoneReached)
         )
     }
 
@@ -570,6 +676,8 @@ final class PetModel: ObservableObject {
         dailyStreak = data.dailyStreak
         lastInteractionDate = data.lastInteractionDate
         lastDailyLineDate = data.lastDailyLineDate
+        pomodoroTotalSessions = data.pomodoroTotalSessions
+        milestoneReached = Set(data.milestoneReached)
 
         // 让 CompanionEngine 处理离线收益/消耗
         CompanionEngine.shared.processOfflineTime(model: self, lastUpdate: data.lastStateUpdate)
@@ -682,6 +790,12 @@ private struct PetStatsData: Codable {
     
     // 每日台词触发日期
     var lastDailyLineDate: Date?
+
+    // 🍅 番茄钟历史
+    var pomodoroTotalSessions: Int = 0
+
+    // 💕 已触发的好感度里程碑
+    var milestoneReached: [Int] = []
     
     // 兼容旧存档
     var energy: Int?
@@ -716,7 +830,8 @@ private final class PetStatsStore {
     }
 
     func save(for characterId: String, affection: Int, stamina: Double, moodLevel: Double, coins: Int, dailyStreak: Int,
-              lastInteractionDate: Date?, lastDailyLineDate: Date?, lastStateUpdate: Date) {
+              lastInteractionDate: Date?, lastDailyLineDate: Date?, lastStateUpdate: Date,
+              pomodoroTotalSessions: Int = 0, milestoneReached: [Int] = []) {
         var all: [String: PetStatsData] = [:]
         // Load existing file to merge
         if let data = try? Data(contentsOf: storageURL),
@@ -731,7 +846,9 @@ private final class PetStatsStore {
             dailyStreak: dailyStreak,
             lastInteractionDate: lastInteractionDate,
             lastStateUpdate: lastStateUpdate,
-            lastDailyLineDate: lastDailyLineDate
+            lastDailyLineDate: lastDailyLineDate,
+            pomodoroTotalSessions: pomodoroTotalSessions,
+            milestoneReached: milestoneReached
         )
         cache[characterId] = all[characterId]
         if let encoded = try? JSONEncoder().encode(all) {
